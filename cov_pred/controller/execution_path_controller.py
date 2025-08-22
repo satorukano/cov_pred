@@ -3,10 +3,11 @@ from entities.trace import Trace
 
 class ExecutionPathController:
 
-    def __init__(self, database, registry, project):
+    def __init__(self, database, registry, project, module):
         self.db = database
         self.registry = registry
         self.project = project
+        self.module = module
         self.signatures = self.db.get_signatures(self.registry)
         self.execution_paths = self.get_execution_paths()
 
@@ -22,6 +23,10 @@ class ExecutionPathController:
             for path in paths:
                 if "/test/" in path["path"]:
                     continue
+
+                if "/" + self.module + "/" not in path["path"]:
+                    continue
+                
                 trace = Trace(path['path'], path['thread_num'], order)
                 traces.append(trace)
                 order += 1

@@ -1,11 +1,18 @@
 class ApplicationLogCollection:
 
-    def __init__(self, application_logs):
+    def __init__(self, application_logs, module):
         self.application_logs = {}
+        self.module = module
         self.set_application_logs(application_logs)
 
     def set_application_logs(self, application_logs):
         for log in application_logs:
+            if "/test/" in log.file:
+                continue
+
+            if "/" + self.module + "/" in log.file:
+                continue
+
             if log.thread_id not in self.application_logs:
                 self.application_logs[log.thread_id] = []
             self.application_logs[log.thread_id].append(log)

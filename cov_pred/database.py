@@ -12,7 +12,7 @@ DB_PASSWORD = os.getenv("DB_PASSWORD")
 DB_HOST =  os.getenv("DB_HOST")
 DB_PORT = os.getenv("DB_PORT")
 
-class database:
+class Database:
 
     def __init__(self):
         self.conn = psycopg2.connect(
@@ -26,6 +26,13 @@ class database:
     def open_cur(self):
         self.cur = self.conn.cursor(cursor_factory=RealDictCursor)
     
+    def get_commit_hash(self, registry):
+        self.open_cur()
+        self.cur.execute("SELECT commit_id FROM run.registry WHERE registry_id = %s", (registry,))
+        row = self.cur.fetchone()
+        self.close_cur()
+        return row['commit_id'] if row else None
+
     def get_logs(self, registry):
         self.open_cur()
         query = "SELECT log.log_statement.statement, log.log_statement.invoked_order, log.logs_in_test.signature FROM log.log_statement JOIN log.logs_in_test ON log.log_statement.test_method_id = log.logs_in_test.test_method_id WHERE log.logs_in_test.registry_id = %s"

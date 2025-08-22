@@ -1,2 +1,32 @@
-def main():
-    pass
+from cov_pred.controller.execution_path_controller import ExecutionPathController
+from cov_pred.controller.log_controller import LogController
+from cov_pred.processor.execution_path_processor import ExecutionPathProcessor
+from cov_pred.database import Database
+from cov_pred.utils.git import clone_or_checkout_commit
+from cov_pred.utils.java_util import extract_java_classes
+import sys
+import json
+
+def main(project, module, registry):
+    db = Database()
+    with open("settings/repo_info.json") as f:
+        repo_info = json.load(f)
+    commit_hash = db.get_commit_hash(registry)
+    clone_or_checkout_commit(repo_info[project]['url'], "./repos", commit_hash)
+    class_to_path = extract_java_classes(f"./repos/{project}")
+    execution_path_controller = ExecutionPathController(db, registry, project, module)
+    log_controller = LogController(db, registry, project, module, class_to_path, module)
+    execution_path_processor = ExecutionPathProcessor(execution_path_controller, log_controller)
+    collection = execution_path_processor.link_logs_to_execution_path()
+
+
+if __name__ == "__main__":
+    if len(sys.argv) != 4:
+        print("Usage: python main.py <project> <module> <registry>")
+        sys.exit(1)
+    
+    project = sys.argv[1]
+    module = sys.argv[2]
+    registry = sys.argv[3]
+    
+    main(project, module, registry)

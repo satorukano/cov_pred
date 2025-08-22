@@ -2,7 +2,7 @@ class ExecutionPathProcessor:
     def __init__(self, execution_path_controller, log_controller):
         self.execution_path_controller = execution_path_controller
         self.log_controller = log_controller
-    
+
     def link_logs_to_execution_path(self):
         thread_num_to_thread_id = self.check_link_logs_to_execution_path()
         application_logs = self.log_controller.get_logs()
@@ -32,6 +32,7 @@ class ExecutionPathProcessor:
                     previous_log = log
                     execution_path = execution_path[:found+1]
                     log_count += 1
+        return collection
 
 
     def check_link_logs_to_execution_path(self):

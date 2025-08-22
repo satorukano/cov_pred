@@ -6,6 +6,7 @@ class ApplicationLog:
     def __init__(self, log_statement, project, order, class_to_path):
         self.log_statement = log_statement
         self.project = project
+        self.class_to_path = class_to_path
         self.thread_id = self.get_thread_id()
         self.line = self.get_line()
         self.class_name = self.get_class()
@@ -53,9 +54,9 @@ class ApplicationLog:
                 return class_name.split("$")[-1]
             return class_name
         return None
-    
-    def set_file(self, class_to_path):
-        file = class_to_path.get(self.class_name)
+
+    def set_file(self):
+        file = self.class_to_path.get(self.class_name)
         return file
     
     def get_file(self):
