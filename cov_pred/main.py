@@ -1,9 +1,9 @@
-from cov_pred.controller.execution_path_controller import ExecutionPathController
-from cov_pred.controller.log_controller import LogController
-from cov_pred.processor.execution_path_processor import ExecutionPathProcessor
-from cov_pred.database import Database
-from cov_pred.utils.git import clone_or_checkout_commit
-from cov_pred.utils.java_util import extract_java_classes
+from controller.trace_controller import TraceController
+from controller.application_log_controller import ApplicationLogController
+from processor.execution_path_processor import ExecutionPathProcessor
+from database import Database
+from utils.git import clone_or_checkout_commit
+from utils.java_util import extract_java_classes
 import sys
 import json
 
@@ -14,10 +14,11 @@ def main(project, module, registry):
     commit_hash = db.get_commit_hash(registry)
     clone_or_checkout_commit(repo_info[project]['url'], "./repos", commit_hash)
     class_to_path = extract_java_classes(f"./repos/{project}")
-    execution_path_controller = ExecutionPathController(db, registry, project, module)
-    log_controller = LogController(db, registry, project, module, class_to_path, module)
-    execution_path_processor = ExecutionPathProcessor(execution_path_controller, log_controller)
+    trace_controller = TraceController(db, registry, project, module)
+    application_log_controller = ApplicationLogController(db, registry, project, class_to_path, module)
+    execution_path_processor = ExecutionPathProcessor(trace_controller, application_log_controller)
     collection = execution_path_processor.link_logs_to_execution_path()
+    print(collection)
 
 
 if __name__ == "__main__":
