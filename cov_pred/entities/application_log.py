@@ -78,3 +78,10 @@ class ApplicationLog:
 
     def get_file(self) -> str | None:
         return self.file
+    
+    def get_order(self) -> int:
+        return self.order
+    
+    def equals(self, other: 'ApplicationLog') -> bool:
+        return self.get_file() == other.get_file() and self.get_line() == other.get_line() and self.get_order() == other.get_order()
+    

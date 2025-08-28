@@ -18,3 +18,9 @@ class Trace:
         if self.file is not None:
             return self.file
         return self.path.split(";")[0]
+    
+    def equals(self, other: 'Trace') -> bool:
+        return self.path == other.path and self.thread_num == other.thread_num and self.order == other.order
+    
+    def __str__(self):
+        return f"Trace(path={self.path}, thread_num={self.thread_num}, order={self.order})"

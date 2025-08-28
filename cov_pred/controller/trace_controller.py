@@ -47,6 +47,14 @@ class TraceController:
         
         for thread_num, traces in execution_path.items():
             execution_path[thread_num] = sorted(traces, key=lambda x: x.order)
+
+        # Remove duplicated threads
+        execution_path_for_check = execution_path.copy()
+        for thread_num, traces in execution_path_for_check.items():
+            for thread_num2, traces2 in execution_path_for_check.items():
+                if thread_num != thread_num2:
+                    if self.check_equal(traces, traces2) and thread_num2 in execution_path:
+                        execution_path.pop(thread_num2)
         return execution_path
     
     def get_traces_by_signature(self, signature: str) -> dict[str, list[Trace]]:
@@ -77,3 +85,12 @@ class TraceController:
             for trace in traces:
                 print(f"  {trace.path}")
             print("\n")
+    
+    def check_equal(self, execution_path1: list[Trace], execution_path2: list[Trace]) -> bool:
+        if len(execution_path1) != len(execution_path2):
+            return False
+        
+        for i in range(len(execution_path1)):
+            if execution_path1[i].equals(execution_path2[i]) is False:
+                return False
+        return True

@@ -40,8 +40,14 @@ class ApplicationLogController:
                 application_logs[log.get_thread_id()] = []
             application_logs[log.get_thread_id()].append(log)
 
-        for thread_num, logs in application_logs.items():
-            application_logs[thread_num] = sorted(self.remove_duplicated_logs(logs), key=lambda x: x.order)
+        application_logs_for_check = application_logs.copy()
+        for thread_id, logs in application_logs_for_check.items():
+            for thread_id2, logs2 in application_logs_for_check.items():
+                if thread_id != thread_id2:
+                    if self.check_equal(logs, logs2) and thread_id2 in application_logs:
+                        application_logs.pop(thread_id2)
+        for thread_id, logs in application_logs.items():
+            application_logs[thread_id] = sorted(self.remove_duplicated_logs(logs), key=lambda x: x.order)
         return application_logs
     
     def remove_duplicated_logs(self, logs: dict[str, ApplicationLog]) -> list[ApplicationLog]:
@@ -68,3 +74,12 @@ class ApplicationLogController:
         if logs_by_signature and thread_id in logs_by_signature:
             return logs_by_signature[thread_id]
         return []
+    
+    def check_equal(self, logs1: list[ApplicationLog], logs2: list[ApplicationLog]) -> bool:
+        if len(logs1) != len(logs2):
+            return False
+        
+        for i in range(len(logs1)):
+            if logs1[i].equals(logs2[i]) is False:
+                return False
+        return True
