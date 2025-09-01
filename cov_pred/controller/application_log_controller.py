@@ -11,6 +11,8 @@ class ApplicationLogController:
         self.module = module
         self.application_logs = None
         self.application_logs = self.get_logs()
+        self.signatures_including_logs = None
+        self.signatures_including_logs = self.get_signatures_including_logs()
 
 
     def get_logs(self) -> dict[str, dict[str, list[ApplicationLog]]]:
@@ -83,3 +85,15 @@ class ApplicationLogController:
             if logs1[i].equals(logs2[i]) is False:
                 return False
         return True
+    
+    def get_signatures_including_logs(self) -> list[str]:
+        if self.signatures_including_logs:
+            return self.signatures_including_logs
+        
+        signatures = []
+        for signature, threads in self.application_logs.items():
+            for thread_id, logs in threads.items():
+                if len(logs) > 0:
+                    signatures.append(signature)
+                    break
+        return signatures
