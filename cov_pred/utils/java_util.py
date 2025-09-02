@@ -67,3 +67,39 @@ def extract_java_classes(directory_path):
                     continue
     
     return class_to_path
+
+def extract_empty_and_comment_lines(directory_path):
+    file_to_empty_comment_lines = {}
+    
+    for root, dirs, files in os.walk(directory_path):
+        for file in files:
+            if file.endswith('.java'):
+                file_path = os.path.join(root, file)
+                related_path = Path(file_path).relative_to(directory_path)
+                empty_comment_lines = []
+                
+                try:
+                    with open(file_path, 'r', encoding='utf-8') as f:
+                        lines = f.readlines()
+                    
+                    in_block_comment = False
+                    for i, line in enumerate(lines):
+                        stripped_line = line.strip()
+                        if in_block_comment:
+                            empty_comment_lines.append(i + 1)
+                            if '*/' in stripped_line:
+                                in_block_comment = False
+                        elif stripped_line.startswith('/*'):
+                            empty_comment_lines.append(i + 1)
+                            if '*/' not in stripped_line:
+                                in_block_comment = True
+                        elif stripped_line.startswith('//') or stripped_line == '':
+                            empty_comment_lines.append(i + 1)
+                    
+                    file_to_empty_comment_lines[str(related_path)] = empty_comment_lines
+                
+                except Exception as e:
+                    print(f"エラー: {file_path} の解析に失敗しました - {str(e)}")
+                    continue
+    
+    return file_to_empty_comment_lines

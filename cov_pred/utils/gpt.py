@@ -9,10 +9,27 @@ class GPT:
 
     def finetune(self, project, registry, model):
         file_path = f"output/{project}_{registry}/training.jsonl"
-        training_file = self.client.files.create(file=open(file_path, "rb"), purpose='fine-tune')
+        training_file = self.upload_file(file_path, "fine-tune")
         suffix = f"{project}_{registry}_model"
         response = self.client.fine_tuning.jobs.create(training_file=training_file.id, model=model, suffix=suffix)
         print(response)
+
+    def batch_request(self, project, registry):
+        file_path = f"output/{project}_{registry}/validation.jsonl"
+        validation_file = self.upload_file(file_path, "batch")
+        response = self.client.batches.create(
+            input_file_id=validation_file.id,
+            endpoint="/v1/chat/completions",
+            completion_window="24h",
+            metadata={
+                "description": f"Evaluation batch for {project}{registry}"
+            }
+        )
+        print(response)
+
+    def upload_file(self, file_path, purpose):
+        return self.client.files.create(file=open(file_path, "rb"), purpose=purpose)
+
 
 
     def format_for_gpt_training(self, item):
@@ -33,13 +50,13 @@ class GPT:
             ]
         }
 
-    def format_for_gpt_validation(self, item, signature, id):
+    def format_for_gpt_validation(self, item, signature, id, model):
         return {
             "custom_id": f"{signature}-{id}",
             "method": "POST",
             "url": "/v1/chat/completions",
             "body": {
-                "model": self.model,
+                "model": model,
                 "messages": [
                     {
                         "role": "system",

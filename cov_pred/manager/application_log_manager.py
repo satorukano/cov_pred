@@ -1,7 +1,7 @@
-from entities.application_log import ApplicationLog
+from entity.application_log import ApplicationLog
 from database import Database
 
-class ApplicationLogController:
+class ApplicationLogManager:
 
     def __init__(self, database: Database, registry: str, project: str, class_to_path: dict[str, str], module: str):
         self.db = database

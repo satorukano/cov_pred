@@ -1,7 +1,7 @@
-from entities.trace import Trace
+from entity.trace import Trace
 from database import Database
 
-class TraceController:
+class TraceManager:
 
     def __init__(self, database: Database, registry: str, project: str, module: str):
         self.db = database

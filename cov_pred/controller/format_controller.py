@@ -1,0 +1,38 @@
+from processor.format_processor import FormatProcessor
+from database import Database
+from utils.java_util import extract_java_classes
+from manager.trace_manager import TraceManager
+from manager.application_log_manager import ApplicationLogManager
+from processor.execution_path_processor import ExecutionPathProcessor
+from processor.format_processor import FormatProcessor
+from utils.gpt import GPT
+
+import os
+
+class FormatController:
+    def __init__(self, project, registry, module):
+        self.project = project
+        self.registry = registry
+        self.module = module
+        self.database = Database()
+
+    def setup(self):
+        self.class_to_path = extract_java_classes(f"./repos/{self.project}")
+        self.trace_manager = TraceManager(self.database, self.registry, self.project, self.module)
+        self.application_log_manager = ApplicationLogManager(self.database, self.registry, self.project, self.class_to_path, self.module)
+        self.signatures_including_logs = self.application_log_manager.get_signatures_including_logs()
+        self.execution_path_processor = ExecutionPathProcessor(self.trace_manager, self.application_log_manager)
+        self.collection = self.execution_path_processor.link_logs_to_execution_path()
+        OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+        self.gpt = GPT(OPENAI_API_KEY)
+        self.format_processor = FormatProcessor(self.signatures_including_logs, self.gpt, {})
+
+
+    def format_for_training(self) -> dict:
+        self.format_processor.format_for_training(self.collection, self.project, self.registry)
+    
+    def format_for_validation(self, model):
+        self.format_processor.format_for_validation(self.application_log_manager, self.project, self.registry, model)
+    
+    def make_validation_oracle(self):
+        self.format_processor.make_validation_oracle(self.trace_manager, self.project, self.registry)

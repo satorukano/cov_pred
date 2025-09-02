@@ -1,7 +1,7 @@
 import json
 import os
 
-def evaluate(pred, ans, project, registry_id):
+def evaluate(pred, ans):
     formatted_pred = format(pred)
     formatted_ans = format(ans)
     precision = calc_precision(formatted_pred, formatted_ans)
@@ -13,13 +13,20 @@ def format(data):
     for file_line in data.split("|"):
         if ":" not in file_line:
             continue
+        if len(file_line.split(":")) != 2:
+            continue
         file_name, lines = file_line.split(":")
-        lines = [int(line) for line in lines.split(",") if line.isdigit()]
+        int_lines = []
+        for line in lines.split(","):
+            try:
+                int_lines.append(int(line))
+            except:
+                continue
         if file_name in formatted:
-            formatted[file_name].extend(lines)
+            formatted[file_name].extend(int_lines)
             formatted[file_name] = list(set(formatted[file_name]))
         else:
-            formatted[file_name] = lines
+            formatted[file_name] = int_lines
     return formatted
 
 def calc_recall(formatted_pred, formatted_ans):

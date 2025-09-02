@@ -1,23 +1,23 @@
-from controller.trace_controller import TraceController
-from controller.application_log_controller import ApplicationLogController
+from manager.trace_manager import TraceManager
+from manager.application_log_manager import ApplicationLogManager
 
 class ExecutionPathProcessor:
-    def __init__(self, trace_controller: TraceController, application_log_controller: ApplicationLogController):
-        self.trace_controller = trace_controller
-        self.application_log_controller = application_log_controller
+    def __init__(self, trace_manager: TraceManager, application_log_manager: ApplicationLogManager):
+        self.trace_manager = trace_manager
+        self.application_log_manager = application_log_manager
         self.total = 0
         self.matched = 0
 
     def link_logs_to_execution_path(self):
         thread_id_to_thread_num = self.check_link_logs_to_execution_path()
         collection = {}
-        for signature in self.trace_controller.get_signatures():
+        for signature in self.trace_manager.get_signatures():
             collection[signature] = {}
-            for thread_id, logs in self.application_log_controller.get_logs_by_signature(signature).items():
+            for thread_id, logs in self.application_log_manager.get_logs_by_signature(signature).items():
                 if thread_id not in thread_id_to_thread_num.get(signature, {}):
                     continue
                 thread_num = thread_id_to_thread_num[signature][thread_id]
-                execution_path = self.trace_controller.get_traces_by_thread(signature, thread_num)
+                execution_path = self.trace_manager.get_traces_by_thread(signature, thread_num)
                 log_count = 0
                 collection[signature][thread_id] = {}
                 previous_log = ""
@@ -39,12 +39,12 @@ class ExecutionPathProcessor:
 
 
     def check_link_logs_to_execution_path(self) -> dict[str, str]:
-        signatures = self.trace_controller.get_signatures()
+        signatures = self.trace_manager.get_signatures()
         thread_id_to_thread_num = {}
         thread_id_to_thread_num_length = {}
         for signature in signatures:
-            for thread_id, logs in self.application_log_controller.get_logs_by_signature(signature).items():
-                for thread_num, execution_path in self.trace_controller.get_traces_by_signature(signature).items():
+            for thread_id, logs in self.application_log_manager.get_logs_by_signature(signature).items():
+                for thread_num, execution_path in self.trace_manager.get_traces_by_signature(signature).items():
                     if execution_path is None:
                         continue
                     if self.check_thread(logs, execution_path):
@@ -75,7 +75,7 @@ class ExecutionPathProcessor:
         return None
     
     def get_statistics(self):
-        signatures = self.trace_controller.get_signatures()
+        signatures = self.trace_manager.get_signatures()
         for signature in signatures:
-            self.total += len(self.application_log_controller.get_logs_by_signature(signature).keys())
+            self.total += len(self.application_log_manager.get_logs_by_signature(signature).keys())
         print(f"Matched {self.matched} out of {self.total} threads")
