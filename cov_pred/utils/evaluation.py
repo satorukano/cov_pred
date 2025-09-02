@@ -19,7 +19,12 @@ def format(data):
         int_lines = []
         for line in lines.split(","):
             try:
-                int_lines.append(int(line))
+                if "-" in line:
+                    start, end = line.split("-")
+                    for i in range(int(start), int(end)+1):
+                        int_lines.append(i)
+                else:
+                    int_lines.append(int(line))
             except:
                 continue
         if file_name in formatted:

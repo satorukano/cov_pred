@@ -1,10 +1,9 @@
 from processor.format_processor import FormatProcessor
 from database import Database
-from utils.java_util import extract_java_classes
+from utils.java_util import extract_java_classes, extract_empty_and_comment_lines
 from manager.trace_manager import TraceManager
 from manager.application_log_manager import ApplicationLogManager
 from processor.execution_path_processor import ExecutionPathProcessor
-from processor.format_processor import FormatProcessor
 from utils.gpt import GPT
 
 import os
@@ -18,6 +17,7 @@ class FormatController:
 
     def setup(self):
         self.class_to_path = extract_java_classes(f"./repos/{self.project}")
+        self.empty_and_comment_lines = extract_empty_and_comment_lines(f"./repos/{self.project}")
         self.trace_manager = TraceManager(self.database, self.registry, self.project, self.module)
         self.application_log_manager = ApplicationLogManager(self.database, self.registry, self.project, self.class_to_path, self.module)
         self.signatures_including_logs = self.application_log_manager.get_signatures_including_logs()
@@ -25,7 +25,7 @@ class FormatController:
         self.collection = self.execution_path_processor.link_logs_to_execution_path()
         OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
         self.gpt = GPT(OPENAI_API_KEY)
-        self.format_processor = FormatProcessor(self.signatures_including_logs, self.gpt, {})
+        self.format_processor = FormatProcessor(self.signatures_including_logs, self.gpt, self.empty_and_comment_lines)
 
 
     def format_for_training(self) -> dict:

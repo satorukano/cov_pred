@@ -13,8 +13,16 @@ def merge_traces(traces1: dict[str, list[int]], traces2: dict[str, list[int]]) -
 def string_traces(traces: dict[str, list[int]]) -> str:
     result = []
     for file, lines in traces.items():
-        lines_str = ",".join([str(line) for line in lines])
-        result.append(f"{file}:{lines_str}")
+        line_count = 0
+        while line_count < len(lines):
+            start_line = lines[line_count]
+            end_line = lines[line_count]
+            while line_count + 1 < len(lines) and start_line + 1 == lines[line_count + 1]:
+                end_line = lines[line_count + 1]
+            if start_line == end_line:
+                result.append(f"{file}:{start_line}")
+            else:
+                result.append(f"{file}:{start_line}-{end_line}")
     return " | ".join(result)
 
 def cut_prefix(self, log_statement: str, default: str) -> str:
@@ -25,10 +33,11 @@ def cut_prefix(self, log_statement: str, default: str) -> str:
             return log_statement[log_level_index:].strip()
     return default
 
-def extract_file_line_from_traces(self, traces: list, empty_and_comment_lines: dict[str, list[int]]) -> dict[str, list[int]]:
+def extract_file_line_from_traces(traces: list, empty_and_comment_lines: dict[str, list[int]]) -> dict[str, list[int]]:
     result = {}
+    return_result = {}
     for trace in traces:
-        file = trace.get_file().split("/")[-1]
+        file = trace.get_file()
         line = int(trace.get_line())
         if file not in result:
             result[file] = []
@@ -47,5 +56,5 @@ def extract_file_line_from_traces(self, traces: list, empty_and_comment_lines: d
                 added_lines.append(j)
             if add:
                 sorted_lines.extend(added_lines)
-        result[file] = sorted(list(set(sorted_lines)))
-    return result
+        return_result[file.split("/")[-1]] = sorted(list(set(sorted_lines)))
+    return return_result

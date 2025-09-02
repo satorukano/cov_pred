@@ -29,7 +29,7 @@ class FormatProcessor:
 
                 for (prev_log, curr_log), executions in logs_executions.items():
                     count += 1
-                    traces = self.extract_file_line_from_traces(executions)
+                    traces = extract_file_line_from_traces(executions, self.empty_and_comment_lines)
                     previous_statement = prev_log.get_log_statement() if prev_log != "" else ""
                     current_statement = curr_log.get_log_statement() if curr_log != "" else ""
                     if len(previous_statement) > 2000 or len(current_statement) > 2000:
@@ -93,7 +93,7 @@ class FormatProcessor:
         for signature in self.validation_signatures:
             oracle[signature] = {}
             for thread_id, traces in trace_manager.get_traces_by_signature(signature).items():
-                file_line = self.extract_file_line_from_traces(traces)
+                file_line = extract_file_line_from_traces(traces, self.empty_and_comment_lines)
                 oracle[signature] = merge_traces(oracle[signature], file_line)
             oracle[signature] = string_traces(oracle[signature])
         with open(f"output/{project}_{registry}/validation_oracle.json", "w") as f:
@@ -110,6 +110,8 @@ class FormatProcessor:
 
     def extract_file_line_from_traces(self, traces: list, empty_and_comment_lines: dict[str, list[int]]) -> dict[str, list[int]]:
         result = {}
+
+        # transform traces to {file: [lines]}
         for trace in traces:
             file = trace.get_file().split("/")[-1]
             line = int(trace.get_line())
@@ -117,6 +119,8 @@ class FormatProcessor:
                 result[file] = []
             if line not in result[file]:
                 result[file].append(line)
+
+        # add empty and comment lines between execution lines
         for file, lines in result.items():
             sorted_lines = sorted(lines)
             for i in range(len(sorted_lines)-1):
