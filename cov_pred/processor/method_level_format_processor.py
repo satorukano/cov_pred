@@ -1,21 +1,20 @@
 from sklearn.model_selection import train_test_split
+from utils.java_util import extract_class_and_method_info
 from utils.gpt import GPT
-from utils.format_util import merge_traces, string_traces, extract_file_line_from_traces, cut_prefix, make_jsonl
-import json
-import os
+from utils.format_util import string_methods, extract_method_from_traces, cut_prefix, make_jsonl
 from manager.application_log_manager import ApplicationLogManager
 from manager.trace_manager import TraceManager
+from ordered_set import OrderedSet
+import json
 
-
-class FormatProcessor:
-
-    def __init__(self, signatures_including_logs: list[str], gpt: GPT, empty_and_comment_lines: dict[str, list[int]], test_percentage=0.2, log_count_threshold=1):
+class MethodLevelFormatProcessor:
+    def __init__(self, signatures_including_logs: list[str], gpt: GPT, class_method_info, test_percentage=0.2, log_count_threshold=1):
         self.test_percentage = test_percentage
         self.log_count_threshold = log_count_threshold
         self.signatures_including_logs = signatures_including_logs
         self.gpt = gpt
-        self.validation_signatures = []
-        self.empty_and_comment_lines = empty_and_comment_lines
+        self.class_method_info = class_method_info
+        self.training_signatures, self.validation_signatures = train_test_split(self.signatures_including_logs, test_size=self.test_percentage, random_state=42)
 
     def format_for_training(self, collection, project, registry):
         formatted_collection = {}
@@ -25,11 +24,11 @@ class FormatProcessor:
                 formatted_collection[signature][thread_id] = []
                 count = 0
                 logs = []
-                merged_traces = {}
+                total_methods = OrderedSet()
 
                 for (prev_log, curr_log), executions in logs_executions.items():
                     count += 1
-                    traces = extract_file_line_from_traces(executions, self.empty_and_comment_lines)
+                    methods = extract_method_from_traces(executions, self.class_method_info)
                     previous_statement = prev_log.get_log_statement() if prev_log != "" else ""
                     current_statement = curr_log.get_log_statement() if curr_log != "" else ""
                     if len(previous_statement) > 2000 or len(current_statement) > 2000:
@@ -42,27 +41,25 @@ class FormatProcessor:
                     if count == 1:
                         logs.append(formatted_previous_log)
                     logs.append(formatted_current_log)
-                    merged_traces = merge_traces(merged_traces, traces)
+                    total_methods.update(methods)
                     if count == len(logs_executions.keys()):
                         formatted_collection[signature][thread_id].append({
-                            f'{"|||".join(logs)}': string_traces(merged_traces)
+                            f'{"|||".join(logs)}': string_methods(total_methods)
                         })
                     if count == self.log_count_threshold:
                         formatted_collection[signature][thread_id].append({
-                            f'{"|||".join(logs)}': string_traces(merged_traces)
+                            f'{"|||".join(logs)}': string_methods(total_methods)
                         })
                         count = 0
                         logs = []
-                        merged_traces = {}
-        train_signature, validation_signatures = train_test_split(self.signatures_including_logs, test_size=self.test_percentage, random_state=42)
+                        total_methods = OrderedSet()
         training_data = []
-        self.validation_signatures = validation_signatures
         for signature, threads_collection in formatted_collection.items():
             for thread_id, items in threads_collection.items():
-                if signature in train_signature:
+                if signature in self.training_signatures:
                     training_data.extend(self.gpt.format_for_gpt_training(item) for item in items)
-        make_jsonl(training_data, f"output/{project}_{registry}/training.jsonl")
-
+        make_jsonl(training_data, f"output/{project}_{registry}/method_level_training.jsonl")
+    
     def format_for_validation(self, application_log_manager: ApplicationLogManager, project: str, registry: str, model: str):
         validation_input = []
         for signature in self.validation_signatures:
@@ -86,15 +83,15 @@ class FormatProcessor:
                     validation_input.append(self.gpt.format_for_gpt_validation(input_data, signature, id_for_validation, model))
                     previous_log = input_current_statement
                     log_count += 1
-        make_jsonl(validation_input, f"output/{project}_{registry}/validation.jsonl")
-
+        make_jsonl(validation_input, f"output/{project}_{registry}/method_level_validation.jsonl")
+    
     def make_validation_oracle(self, trace_manager: TraceManager, project: str, registry: str):
         oracle = {}
         for signature in self.validation_signatures:
-            oracle[signature] = {}
+            oracle[signature] = set()
             for thread_id, traces in trace_manager.get_traces_by_signature(signature).items():
-                file_line = extract_file_line_from_traces(traces, self.empty_and_comment_lines)
-                oracle[signature] = merge_traces(oracle[signature], file_line)
-            oracle[signature] = string_traces(oracle[signature])
-        with open(f"output/{project}_{registry}/validation_oracle.json", "w") as f:
+                methods = extract_method_from_traces(traces, self.class_method_info)
+                oracle[signature].update(methods)
+            oracle[signature] = string_methods(oracle[signature])
+        with open(f"output/{project}_{registry}/method_level_validation_oracle.json", "w") as f:
             json.dump(oracle, f, indent=4)

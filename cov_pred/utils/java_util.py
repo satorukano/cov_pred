@@ -68,6 +68,129 @@ def extract_java_classes(directory_path):
     
     return class_to_path
 
+def extract_class_and_method_info(file_path):
+    """
+    単一のJavaファイルからクラス情報とメソッド情報を取得し、それぞれの行範囲を返す
+    
+    Args:
+        file_path (str): Javaファイルのパス
+        
+    Returns:
+        dict: {
+            'classes': [{'name': str, 'start_line': int, 'end_line': int}],
+            'methods': [{'class_name': str, 'method_name': str, 'start_line': int, 'end_line': int}]
+        }
+    """
+    result = {
+        'classes': [],
+        'methods': []
+    }
+    
+    try:
+        # Javaファイルを読み込み
+        with open(file_path, 'r', encoding='utf-8') as f:
+            java_content = f.read()
+        
+        # javalangでパース
+        tree = javalang.parse.parse(java_content)
+        
+        def extract_class_info(type_declaration, parent_name=""):
+            """再帰的にクラス情報とメソッド情報を抽出"""
+            class_name = type_declaration.name
+            
+            # クラスの完全修飾名を作成
+            if parent_name:
+                full_class_name = f"{parent_name}.{class_name}"
+            else:
+                full_class_name = class_name
+            
+            # クラス情報を追加
+            if hasattr(type_declaration, 'position') and type_declaration.position:
+                start_line = type_declaration.position.line
+                # 終了行の推定（bodyの最後のメンバーの位置から推定）
+                end_line = start_line
+                if hasattr(type_declaration, 'body') and type_declaration.body:
+                    for member in type_declaration.body:
+                        if hasattr(member, 'position') and member.position:
+                            if member.position.line > end_line:
+                                end_line = member.position.line
+                
+                result['classes'].append({
+                    'name': full_class_name,
+                    'start_line': start_line,
+                    'end_line': end_line
+                })
+            
+            # メンバーを処理
+            if hasattr(type_declaration, 'body'):
+                for member in type_declaration.body:
+                    # メソッドの場合
+                    if isinstance(member, javalang.tree.MethodDeclaration):
+                        if hasattr(member, 'position') and member.position:
+                            method_start = member.position.line
+                            # メソッドの終了行推定（bodyがある場合はその最後から推定）
+                            method_end = method_start
+                            if hasattr(member, 'body') and member.body:
+                                for stmt in member.body:
+                                    if hasattr(stmt, 'position') and stmt.position:
+                                        if stmt.position.line > method_end:
+                                            method_end = stmt.position.line
+                            
+                            result['methods'].append({
+                                'class_name': full_class_name,
+                                'method_name': member.name,
+                                'start_line': method_start,
+                                'end_line': method_end
+                            })
+                    
+                    # 内部クラスの場合
+                    elif isinstance(member, (javalang.tree.ClassDeclaration, 
+                                           javalang.tree.InterfaceDeclaration,
+                                           javalang.tree.EnumDeclaration)):
+                        extract_class_info(member, full_class_name)
+        
+        # トップレベルのクラス、インターフェース、列挙型を処理
+        for type_declaration in tree.types:
+            extract_class_info(type_declaration)
+        
+    except Exception as e:
+        print(f"エラー: {file_path} の解析に失敗しました - {str(e)}")
+    
+    return result
+
+def extract_all_class_and_method_info(directory_path):
+    """
+    ディレクトリ内のすべてのJavaファイルからクラス情報とメソッド情報を取得
+    
+    Args:
+        directory_path (str): Javaファイルが格納されているディレクトリのパス
+        
+    Returns:
+        dict: {
+            'file_path': {
+                'classes': [{'name': str, 'start_line': int, 'end_line': int}],
+                'methods': [{'class_name': str, 'method_name': str, 'start_line': int, 'end_line': int}]
+            }
+        }
+    """
+    all_results = {}
+    
+    # ディレクトリを再帰的に探索
+    for root, _, files in os.walk(directory_path):
+        for file in files:
+            if file.endswith('.java'):
+                file_path = os.path.join(root, file)
+                related_path = Path(file_path).relative_to(directory_path)
+                
+                # 単一ファイルの解析結果を取得
+                file_result = extract_class_and_method_info(file_path)
+                
+                # 結果が空でない場合のみ追加
+                if file_result['classes'] or file_result['methods']:
+                    all_results[str(related_path)] = file_result
+    
+    return all_results
+
 def extract_empty_and_comment_lines(directory_path):
     file_to_empty_comment_lines = {}
     

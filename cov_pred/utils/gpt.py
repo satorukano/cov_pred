@@ -7,15 +7,19 @@ class GPT:
         self.model = None
         self.client = OpenAI(api_key=self.api_key)
 
-    def finetune(self, project, registry, model):
+    def finetune(self, project, registry, model, method_level=False):
         file_path = f"output/{project}_{registry}/training.jsonl"
+        if method_level:
+            file_path = f"output/{project}_{registry}/method_level_training.jsonl"
         training_file = self.upload_file(file_path, "fine-tune")
         suffix = f"{project}_{registry}_model"
         response = self.client.fine_tuning.jobs.create(training_file=training_file.id, model=model, suffix=suffix)
         print(response)
 
-    def batch_request(self, project, registry):
+    def batch_request(self, project, registry, method_level=False):
         file_path = f"output/{project}_{registry}/validation.jsonl"
+        if method_level:
+            file_path = f"output/{project}_{registry}/method_level_validation.jsonl"
         validation_file = self.upload_file(file_path, "batch")
         response = self.client.batches.create(
             input_file_id=validation_file.id,

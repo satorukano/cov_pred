@@ -1,3 +1,7 @@
+import os
+import json
+from ordered_set import OrderedSet
+
 def merge_traces(traces1: dict[str, list[int]], traces2: dict[str, list[int]]) -> dict[str, list[int]]:
     merged = traces1.copy()
     for file, lines in traces2.items():
@@ -14,18 +18,23 @@ def string_traces(traces: dict[str, list[int]]) -> str:
     result = []
     for file, lines in traces.items():
         line_count = 0
+        file_line = []
         while line_count < len(lines):
             start_line = lines[line_count]
             end_line = lines[line_count]
-            while line_count + 1 < len(lines) and start_line + 1 == lines[line_count + 1]:
+            while line_count + 1 < len(lines) and end_line + 1 == lines[line_count + 1]:
                 end_line = lines[line_count + 1]
+                line_count += 1
             if start_line == end_line:
-                result.append(f"{file}:{start_line}")
+                line_count += 1
+                file_line.append(f"{start_line}")
             else:
-                result.append(f"{file}:{start_line}-{end_line}")
+                line_count += 1
+                file_line.append(f"{start_line}-{end_line}")
+        result.append(f"{file}:{','.join(file_line)}")
     return " | ".join(result)
 
-def cut_prefix(self, log_statement: str, default: str) -> str:
+def cut_prefix(log_statement: str, default: str) -> str:
     log_levels = ['INFO', 'DEBUG', 'WARN', 'ERROR']
     for level in log_levels:
         if level in log_statement:
@@ -58,3 +67,26 @@ def extract_file_line_from_traces(traces: list, empty_and_comment_lines: dict[st
                 sorted_lines.extend(added_lines)
         return_result[file.split("/")[-1]] = sorted(list(set(sorted_lines)))
     return return_result
+
+def extract_method_from_traces(traces: list, class_method_info: dict[list[dict[str, str]]]):
+    result = OrderedSet()
+    for trace in traces:
+        file = trace.get_file()
+        line = int(trace.get_line())
+        if file in class_method_info:
+            for method_info in class_method_info[file]["methods"]:
+                if method_info['start_line'] <= line <= method_info['end_line']:
+                    result.add(method_info["class_name"] + "." + method_info["method_name"])
+    return result
+
+def string_methods(methods: set[str]) -> str:
+    return " | ".join(list(methods))
+
+def make_jsonl(data, filename):
+    os.makedirs(os.path.dirname(filename), exist_ok=True)
+    with open(filename, "w") as f:
+        for item in data:
+            f.write(json.dumps(item) + "\n")
+
+def set_methods(methods: str) -> set[str]:
+    return set(map(str.strip, methods.split("|")))

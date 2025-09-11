@@ -63,3 +63,19 @@ def calc_precision(formatted_pred, formatted_ans):
     if all_lines == 0:
         return 0
     return right_pred / all_lines
+
+def evaluate_methods_level(pred, ans):
+    pred_set = set(pred)
+    ans_set = set(ans)
+    
+    if len(pred_set) == 0:
+        precision = 0
+    else:
+        precision = len(pred_set & ans_set) / len(pred_set)
+    
+    if len(ans_set) == 0:
+        recall = 0
+    else:
+        recall = len(pred_set & ans_set) / len(ans_set)
+    
+    return precision, recall
