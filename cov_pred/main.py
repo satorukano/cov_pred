@@ -2,7 +2,8 @@ import argparse
 from dotenv import load_dotenv
 from cli.format_cli import setup_format_parser
 from cli.gpt_cli import setup_gpt_parser
-from cli.evaluate_cli import setup_evaluate_parser, setup_evaluate_method_parser
+from cli.evaluate_cli import setup_evaluate_parser
+from cli.comparison_cli import setup_compare_parser
 
 load_dotenv()
 
@@ -13,8 +14,8 @@ def main():
     setup_format_parser(subparsers)
     setup_gpt_parser(subparsers)
     setup_evaluate_parser(subparsers)
-    setup_evaluate_method_parser(subparsers)
-    
+    setup_compare_parser(subparsers)
+
     args = parser.parse_args()
     
     if hasattr(args, 'func'):

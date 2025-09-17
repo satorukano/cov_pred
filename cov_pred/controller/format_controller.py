@@ -2,7 +2,7 @@ from processor.format_processor import FormatProcessor
 from processor.method_level_format_processor import MethodLevelFormatProcessor
 from database import Database
 from utils.java_util import extract_java_classes, extract_empty_and_comment_lines, extract_all_class_and_method_info
-from utils.git import clone_or_checkout_commit
+from utils.git import Git
 from manager.trace_manager import TraceManager
 from manager.application_log_manager import ApplicationLogManager
 from processor.execution_path_processor import ExecutionPathProcessor
@@ -19,12 +19,10 @@ class FormatController:
         self.database = Database()
 
     def setup(self):
+        git = Git(self.project, self.registry, "./repos", self.database)
+        git.clone_or_checkout_commit()
         self.class_to_path = extract_java_classes(f"./repos/{self.project}")
         self.empty_and_comment_lines = extract_empty_and_comment_lines(f"./repos/{self.project}")
-        with open("settings/repo_info.json") as f:
-            repo_info = json.load(f)
-        commit_hash = self.database.get_commit_hash(self.registry)
-        clone_or_checkout_commit(repo_info[self.project]['url'], "./repos", commit_hash)
         self.trace_manager = TraceManager(self.database, self.registry, self.project, self.module)
         self.application_log_manager = ApplicationLogManager(self.database, self.registry, self.project, self.class_to_path, self.module)
         self.signatures_including_logs = self.application_log_manager.get_signatures_including_logs()

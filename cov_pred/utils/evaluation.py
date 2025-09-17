@@ -67,7 +67,6 @@ def calc_precision(formatted_pred, formatted_ans):
 def evaluate_methods_level(pred, ans):
     pred_set = set(pred)
     ans_set = set(ans)
-    
     if len(pred_set) == 0:
         precision = 0
     else:

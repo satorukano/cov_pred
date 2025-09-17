@@ -6,7 +6,7 @@ class EvaluationController:
         self.registry = registry
         self.evaluation_processor = EvaluationProcessor(self.project, self.registry)
     
-    def setup_for_line_level(self):
+    def setup(self):
         self.evaluation_processor = EvaluationProcessor(self.project, self.registry)
 
     def evaluate(self):
@@ -14,3 +14,6 @@ class EvaluationController:
     
     def method_level_evaluate(self):
         self.evaluation_processor.method_level_evaluate()
+    
+    def logcoco_method_level_evaluate(self):
+        self.evaluation_processor.logcoco_method_level_evaluate()

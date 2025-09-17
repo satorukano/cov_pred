@@ -1,6 +1,9 @@
 import json
+import os
+import csv
 from utils.evaluation import evaluate, format, evaluate_methods_level
 from utils.format_util import merge_traces, string_traces, set_methods
+from utils.java_util import extract_all_class_and_method_info
 
 class EvaluationProcessor:
 
@@ -65,3 +68,46 @@ class EvaluationProcessor:
         }
         with open(f"output/{self.project}_{self.registry}/method_level_validation_metrics.json", "w") as f:
             json.dump(results, f, indent=4)
+    
+    def logcoco_method_level_evaluate(self):
+        logcoco_results_directory = f"LogCoCo/{self.project}_{self.registry}"
+        evaluation_results = {}
+        class_and_method_info = extract_all_class_and_method_info(f"repos/{self.project}")
+        oracle = {}
+        oracle_file = f"output/{self.project}_{self.registry}/method_level_validation_oracle.json"
+        with open(oracle_file, "r") as f:
+            oracle = json.load(f)
+        formatted_oracle = {}
+        for method, ans in oracle.items():
+            formatted_oracle[method.split(";")[-1]] = ans
+        for dir in os.listdir(logcoco_results_directory):
+            test_method_name = dir
+            executed_method = set()
+            with open(f"{logcoco_results_directory}/{test_method_name}/coverage.csv", "r") as f:
+                reader = csv.DictReader(f)
+                for row in reader:
+                    if row["MustCoveredLines"] == "0":
+                        continue
+                    # Get the relative file path(TODO fix for your environment)
+                    file_path = os.path.relpath(row["FilePath"], "/work/satoru-k/projects/"+self.project)
+                    method_name = row["Method"]
+                    file_info = class_and_method_info.get(file_path, {})
+
+                    if not file_info:
+                        continue
+                    methods_info = file_info.get("methods", [])
+                    for method_info in methods_info:
+                        if method_info["method_name"] == method_name and int(row["StartLine"]) <= method_info["start_line"] and method_info["end_line"] <= int(row["EndLine"]):
+                            executed_method.add(method_info["class_name"] + "." + method_info["method_name"])
+                oracle_methods = set_methods(formatted_oracle.get(test_method_name, ""))
+                precision, recall = evaluate_methods_level(executed_method, oracle_methods)
+                evaluation_results[test_method_name] = {"precision": precision, "recall": recall, "f1": (2 * precision * recall) / (precision + recall) if (precision + recall) > 0 else 0}
+            evaluation_results["average"] = {
+                "precision": sum(result["precision"] for result in evaluation_results.values()) / len(evaluation_results),
+                "recall": sum(result["recall"] for result in evaluation_results.values()) / len(evaluation_results),
+                "f1": sum(result["f1"] for result in evaluation_results.values()) / len(evaluation_results),
+            }
+        with open(f"output/{self.project}_{self.registry}/logcoco_method_level_validation_metrics.json", "w") as f:
+            json.dump(evaluation_results, f, indent=4)
+
+

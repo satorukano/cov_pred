@@ -11,12 +11,12 @@ class GPTController:
         self.api_key = os.getenv("OPENAI_API_KEY")
         self.gpt = GPT(self.api_key)
     
-    def finetune(self, model="gpt-4.1-mini-2025-04-14", method_level=False):
+    def finetune(self, model="gpt-4.1-mini-2025-04-14"):
         self.gpt.finetune(self.project, self.registry, model)
 
-    def method_level_finetune(self, model="gpt-4.1-mini-2025-04-14", method_level=True):
-        self.gpt.finetune(self.project, self.registry, model, method_level)
-    
+    def method_level_finetune(self, model="gpt-4.1-mini-2025-04-14"):
+        self.gpt.finetune(self.project, self.registry, model, method_level=True)
+
     def batch_request(self):
         self.gpt.batch_request(self.project, self.registry)
 

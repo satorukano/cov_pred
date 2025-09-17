@@ -11,7 +11,7 @@ def setup_format_parser(subparsers):
     parser.set_defaults(func=handle_format)
 
 def handle_format(args):
-    if args.mode in ['validate', 'validate_method_level'] and not args.model:
+    if args.mode not in ['validate', 'validate_method_level'] and not args.model:
         raise ValueError(f"--model is required for {args.mode} mode")
     
     controller = FormatController(args.project, args.registry, args.module)
