@@ -1,11 +1,8 @@
 import argparse
-from dotenv import load_dotenv
 from cli.format_cli import setup_format_parser
 from cli.gpt_cli import setup_gpt_parser
 from cli.evaluate_cli import setup_evaluate_parser
 from cli.comparison_cli import setup_compare_parser
-
-load_dotenv()
 
 def main():
     parser = argparse.ArgumentParser(description='Coverage prediction tool')

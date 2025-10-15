@@ -5,3 +5,5 @@ __pycache__/
 repos
 output/
 LogCoCo/
+*.json
+*.jsonl

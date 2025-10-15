@@ -2,6 +2,7 @@ import os
 import json
 import javalang
 from pathlib import Path
+import subprocess
 
 def extract_java_classes(directory_path):
     class_to_path = {}
@@ -133,6 +134,7 @@ def extract_class_and_method_info(file_path):
                             if hasattr(member, 'body') and member.body:
                                 for stmt in member.body:
                                     if hasattr(stmt, 'position') and stmt.position:
+                                        print(f"{full_class_name}.{member.name} - at line {stmt.position.line}")
                                         if stmt.position.line > method_end:
                                             method_end = stmt.position.line
                             
@@ -173,23 +175,11 @@ def extract_all_class_and_method_info(directory_path):
             }
         }
     """
-    all_results = {}
-    
-    # ディレクトリを再帰的に探索
-    for root, _, files in os.walk(directory_path):
-        for file in files:
-            if file.endswith('.java'):
-                file_path = os.path.join(root, file)
-                related_path = Path(file_path).relative_to(directory_path)
-                
-                # 単一ファイルの解析結果を取得
-                file_result = extract_class_and_method_info(file_path)
-                
-                # 結果が空でない場合のみ追加
-                if file_result['classes'] or file_result['methods']:
-                    all_results[str(related_path)] = file_result
-    
-    return all_results
+    output_file = directory_path.split('/')[-1] + '_class_info.json'
+    result = subprocess.run(['java', '-jar', 'library/staticanalysis.jar', 'info', directory_path, output_file])
+    with open(output_file, 'r') as f:
+        return json.load(f)
+
 
 def extract_empty_and_comment_lines(directory_path):
     file_to_empty_comment_lines = {}
