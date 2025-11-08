@@ -29,8 +29,10 @@ class BulkFormatProcessor:
             logs = self.application_log_manager.get_logs_by_signature(signature)
             total_logs = []
             for thread_id, log_list in logs.items():
-                total_logs.extend([log.get_log_statement() for log in log_list])
-            logs_str = "|".join(total_logs)
+                total_logs.extend(log_list)
+            ordered_logs = sorted(total_logs, key=lambda x: x.order)
+            ordered_log_statements = [log.get_log_statement() for log in ordered_logs]
+            logs_str = "|".join(ordered_log_statements)
             for thread_id, traces in self.trace_manager.get_traces_by_signature(signature).items():
                 file_line = extract_file_line_from_traces(traces, self.empty_and_comment_lines)
                 datasets[signature] = merge_traces(datasets[signature], file_line)
