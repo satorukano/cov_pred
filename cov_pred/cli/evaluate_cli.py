@@ -15,6 +15,8 @@ def handle_evaluate(args):
 
     if args.mode == 'line':
         controller.evaluate()
+    elif args.mode == 'logcoco_line':
+        controller.logcoco_evaluate()
     elif args.mode == 'method':
         controller.method_level_evaluate()
     elif args.mode == 'logcoco_method':

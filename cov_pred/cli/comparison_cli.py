@@ -7,6 +7,7 @@ def setup_compare_parser(subparsers):
                        help='Compare mode')
     parser.add_argument('project', help='Project name')
     parser.add_argument('registry', help='Registry path')
+    parser.add_argument('level', choices=['method', 'line', 'bulk'], help='Log level')
     parser.set_defaults(func=handle_compare)
 
 def handle_compare(args):
@@ -15,7 +16,7 @@ def handle_compare(args):
 
     if args.mode == 'prepare_logcoco':
         controller = LogcocoController(args.project, args.registry)
-        controller.prepare_log_data()
+        controller.prepare_log_data(args.level)
     
     if args.mode == 'static_analysis':
         module = 'module'

@@ -1,22 +1,24 @@
 from sklearn.model_selection import train_test_split
 from utils.java_util import extract_class_and_method_info
 from utils.gpt import GPT
-from utils.format_util import string_methods, extract_method_from_traces, cut_prefix, make_jsonl
+from utils.format_util import string_methods, extract_method_from_traces, cut_prefix, make_jsonl, get_train_test_split
 from manager.application_log_manager import ApplicationLogManager
 from manager.trace_manager import TraceManager
 from ordered_set import OrderedSet
 import json
 
 class MethodLevelFormatProcessor:
-    def __init__(self, signatures_including_logs: list[str], gpt: GPT, class_method_info, test_percentage=0.2, log_count_threshold=1):
+    def __init__(self, project: str, registry: str, signatures_including_logs: list[str], gpt: GPT, class_method_info, test_percentage=0.2, log_count_threshold=1):
+        self.project = project
+        self.registry = registry
         self.test_percentage = test_percentage
         self.log_count_threshold = log_count_threshold
         self.signatures_including_logs = signatures_including_logs
         self.gpt = gpt
         self.class_method_info = class_method_info
-        self.training_signatures, self.validation_signatures = train_test_split(self.signatures_including_logs, test_size=self.test_percentage, random_state=42)
+        self.training_signatures, self.validation_signatures = get_train_test_split(self.project, self.registry,self.signatures_including_logs, test_size=self.test_percentage, random_state=42)
 
-    def format_for_training(self, collection, project, registry):
+    def format_for_training(self, collection):
         formatted_collection = {}
         for signature, threads_collection in collection.items():
             formatted_collection[signature] = {}
@@ -58,9 +60,9 @@ class MethodLevelFormatProcessor:
             for thread_id, items in threads_collection.items():
                 if signature in self.training_signatures:
                     training_data.extend(self.gpt.format_for_gpt_training(item) for item in items)
-        make_jsonl(training_data, f"output/{project}_{registry}/method_level_training.jsonl")
-    
-    def format_for_validation(self, application_log_manager: ApplicationLogManager, project: str, registry: str, model: str):
+        make_jsonl(training_data, f"output/{self.project}_{self.registry}/method_level_training.jsonl")
+
+    def format_for_validation(self, application_log_manager: ApplicationLogManager, model: str):
         validation_input = []
         for signature in self.validation_signatures:
             id_for_validation = 0
@@ -83,9 +85,9 @@ class MethodLevelFormatProcessor:
                     validation_input.append(self.gpt.format_for_gpt_validation(input_data, signature, id_for_validation, model))
                     previous_log = input_current_statement
                     log_count += 1
-        make_jsonl(validation_input, f"output/{project}_{registry}/method_level_validation.jsonl")
-    
-    def make_validation_oracle(self, trace_manager: TraceManager, project: str, registry: str):
+        make_jsonl(validation_input, f"output/{self.project}_{self.registry}/method_level_validation.jsonl")
+
+    def make_validation_oracle(self, trace_manager: TraceManager):
         oracle = {}
         for signature in self.validation_signatures:
             oracle[signature] = set()
@@ -93,5 +95,5 @@ class MethodLevelFormatProcessor:
                 methods = extract_method_from_traces(traces, self.class_method_info)
                 oracle[signature].update(methods)
             oracle[signature] = string_methods(oracle[signature])
-        with open(f"output/{project}_{registry}/method_level_validation_oracle.json", "w") as f:
+        with open(f"output/{self.project}_{self.registry}/method_level_validation_oracle.json", "w") as f:
             json.dump(oracle, f, indent=4)

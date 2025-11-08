@@ -8,5 +8,5 @@ class LogcocoController:
         database = Database()
         self.logcoco_processor = LogcocoProcessor(self.project, self.registry, database)
 
-    def prepare_log_data(self):
-        self.logcoco_processor.prepare_log_data()
+    def prepare_log_data(self, level):
+        self.logcoco_processor.prepare_log_data(level)

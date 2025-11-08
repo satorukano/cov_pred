@@ -15,10 +15,16 @@ class GPTController:
         self.gpt.finetune(self.project, self.registry, model)
 
     def method_level_finetune(self, model="gpt-4.1-mini-2025-04-14"):
-        self.gpt.finetune(self.project, self.registry, model, method_level=True)
+        self.gpt.finetune(self.project, self.registry, model, level="method")
+
+    def bulk_finetune(self, model="gpt-4.1-mini-2025-04-14"):
+        self.gpt.finetune(self.project, self.registry, model, level="bulk")
 
     def batch_request(self):
         self.gpt.batch_request(self.project, self.registry)
 
     def method_level_batch_request(self):
-        self.gpt.batch_request(self.project, self.registry, method_level=True)
+        self.gpt.batch_request(self.project, self.registry, level="method")
+    
+    def bulk_batch_request(self):
+        self.gpt.batch_request(self.project, self.registry, level="bulk")

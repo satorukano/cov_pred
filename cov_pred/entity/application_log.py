@@ -6,8 +6,16 @@ class ApplicationLog:
     def __init__(self, log_statement: str, project: str, order: int, class_to_path: dict[str, str]):
         self.patterns = {
             "zookeeper" : {
-                "line": r'[A-Za-z_$]+@\d+',
+                "line": r'[A-Za-z0-9_$]+@\d+',
                 "class": r'[A-Za-z0-9_$]+@\d+'
+            },
+            "druid": {
+                "line": r'[A-Za-z0-9_$]+@\d+',
+                "class": r'[A-Za-z0-9_$]+@\d+'
+            },
+            "activemq": {
+                "line": r'\s*[A-Za-z0-9_$]+\s*@\d+',
+                "class": r'\s*[A-Za-z0-9_$]+\s*@\d+'
             }
         }
         self.log_statement = log_statement
@@ -31,22 +39,44 @@ class ApplicationLog:
         if self.thread_id is not None:
             return self.thread_id
         log_levels = ['INFO', 'DEBUG', 'WARN', 'ERROR']
-        for level in log_levels:
-            level_index = self.log_statement.find(level)
-            if level_index == -1:
-                continue
-            after_level = self.log_statement[level_index + len(level):]
-            bracket_start = after_level.find('[')
-            if bracket_start == -1:
-                return None
-            # just in case bracket in bracket
-            bracket_content_end = after_level.find('@', bracket_start)
+        if self.project == "zookeeper":
+            for level in log_levels:
+                level_index = self.log_statement.find(level)
+                if level_index == -1:
+                    continue
+                after_level = self.log_statement[level_index + len(level):]
+                bracket_start = after_level.find('[')
+                if bracket_start == -1:
+                    return None
+                # just in case bracket in bracket
+                bracket_content_end = after_level.find('@', bracket_start)
 
-            if bracket_content_end == -1:
-                return None
-            bracket_content = after_level[bracket_start + 1:bracket_content_end]
-            thread_id = "".join(bracket_content.split(':')[:-1])
-            return thread_id
+                if bracket_content_end == -1:
+                    return None
+                bracket_content = after_level[bracket_start + 1:bracket_content_end]
+                thread_id = "".join(bracket_content.split(':')[:-1])
+                return thread_id
+        else:
+            for level in log_levels:
+                level_index = self.log_statement.find(level)
+                if level_index == -1:
+                    continue
+                before_level = self.log_statement[:level_index]
+                bracket_start = before_level.find('[')
+                if bracket_start == -1:
+                    after_level = self.log_statement[level_index:]
+                    thread_id = after_level.split('|')[1].strip()
+                    if thread_id:
+                        return thread_id
+                # just in case bracket in bracket
+                bracket_content_end = before_level.rfind(']')
+
+                if bracket_content_end == -1:
+                    return None
+                bracket_content = before_level[bracket_start + 1:bracket_content_end]
+                thread_id = bracket_content.strip()
+                return thread_id
+
         return None
 
     def get_line(self) -> str | None:
@@ -54,6 +84,12 @@ class ApplicationLog:
             return self.line
 
         pattern = self.patterns[self.project]["line"]
+        match = re.search(pattern, self.log_statement)
+        if match:
+            return match.group(0).split('@')[-1]
+        
+        # activemq sometimes have different pattern
+        pattern = r'[A-Za-z0-9_$]+@\d+'
         match = re.search(pattern, self.log_statement)
         if match:
             return match.group(0).split('@')[-1]
@@ -67,9 +103,22 @@ class ApplicationLog:
         match = re.search(pattern, self.log_statement)
         if match:
             class_name = match.group(0).split('@')[0]
+            class_name = class_name.strip()
             if "$" in class_name:
                 return class_name.replace("$", ".")
             return class_name
+        
+        # activemq sometimes have different pattern
+        pattern = r'[A-Za-z0-9_$]+@\d+'
+        match = re.search(pattern, self.log_statement)
+        if match:
+            class_name = match.group(0).split('@')[0]
+            class_name = class_name.strip()
+            if "$" in class_name:
+                return class_name.replace("$", ".")
+            return class_name
+        
+        print("No class found in log statement:", self.log_statement)
         return None
 
     def set_file(self):

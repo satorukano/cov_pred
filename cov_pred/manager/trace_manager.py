@@ -3,11 +3,10 @@ from database import Database
 
 class TraceManager:
 
-    def __init__(self, database: Database, registry: str, project: str, module: str):
+    def __init__(self, database: Database, registry: str, project: str):
         self.db = database
         self.registry = registry
         self.project = project
-        self.module = module
         self.signatures = self.db.get_signatures(self.registry)
         self.execution_paths = None
         self.execution_paths = self.get_execution_paths()
@@ -23,9 +22,6 @@ class TraceManager:
             traces = []
             for path in paths:
                 if "/test/" in path["path"]:
-                    continue
-
-                if self.module + "/" not in path["path"]:
                     continue
 
                 trace = Trace(path['path'], path['thread_id'], order)

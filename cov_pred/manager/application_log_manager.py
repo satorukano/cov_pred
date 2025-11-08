@@ -3,12 +3,11 @@ from database import Database
 
 class ApplicationLogManager:
 
-    def __init__(self, database: Database, registry: str, project: str, class_to_path: dict[str, str], module: str):
+    def __init__(self, database: Database, registry: str, project: str, class_to_path: dict[str, str]):
         self.db = database
         self.registry = registry
         self.project = project
         self.class_to_path = class_to_path
-        self.module = module
         self.application_logs = None
         self.application_logs = self.get_logs()
         self.signatures_including_logs = None
@@ -25,7 +24,7 @@ class ApplicationLogManager:
             application_log = ApplicationLog(log['statement'], self.project, log['invoked_order'], self.class_to_path)
             if application_log.get_file() is None:
                 continue
-            if "/test/" in application_log.get_file() or self.module + "/" not in application_log.get_file():
+            if "/test/" in application_log.get_file():
                 continue
             if log['signature'] not in application_logs_with_signature:
                 application_logs_with_signature[log['signature']] = []
@@ -33,6 +32,7 @@ class ApplicationLogManager:
         
         for signature, logs in application_logs_with_signature.items():
             application_logs_with_signature[signature] = self.classify_logs_by_thread(logs)
+        print(f"Loaded application logs for {len(application_logs_with_signature)} signatures in project {self.project}")
         return application_logs_with_signature
     
     def classify_logs_by_thread(self, logs: list[ApplicationLog]) -> dict[str, list[ApplicationLog]]:
@@ -92,6 +92,8 @@ class ApplicationLogManager:
         
         signatures = []
         for signature, threads in self.application_logs.items():
+            if signature == '':
+                continue
             for thread_id, logs in threads.items():
                 if len(logs) > 0:
                     signatures.append(signature)

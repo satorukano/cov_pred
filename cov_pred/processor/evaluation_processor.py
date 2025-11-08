@@ -40,6 +40,52 @@ class EvaluationProcessor:
         with open(f"output/{self.project}_{self.registry}/validation_metrics.json", "w") as f:
             json.dump(results, f, indent=4)
     
+    def logcoco_evaluate(self, include_may_lines: bool = False):
+        logcoco_results_directory = f"LogCoCo/{self.project}_{self.registry}"
+        evaluation_results = {}
+        predictions = {}
+        oracle = {}
+        oracle_file = f"output/{self.project}_{self.registry}/validation_oracle.json"
+        with open(oracle_file, "r") as f:
+            oracle = json.load(f)
+        formatted_oracle = {}
+        for method, ans in oracle.items():
+            formatted_oracle[method.split(";")[-1]] = ans
+        for dir in os.listdir(logcoco_results_directory):
+            test_method_name = dir
+            predictions[test_method_name] = {}
+            with open(f"{logcoco_results_directory}/{test_method_name}/coverage.csv", "r") as f:
+                reader = csv.DictReader(f)
+                for row in reader:
+                    if row["MustCoveredLines"] == "0":
+                        continue
+                    # Get the relative file path(TODO fix for your environment)
+                    file = os.path.relpath(row["FilePath"], "/work/satoru-k/projects/"+self.project)[-1]
+                    must_lines = row['MustLineNumbers']
+                    may_lines = row['MayLineNumbers'] if include_may_lines else None
+                lines = must_lines.split(";")
+                if may_lines:
+                    lines += may_lines.split(";")
+                for line in lines:
+                    line_number = int(line)
+                    if file not in predictions[test_method_name]:
+                        predictions[test_method_name][file] = []
+                    predictions[test_method_name][file].append(line_number)
+            
+            for file, lines in predictions[test_method_name].items():
+                predictions[test_method_name][file] = sorted(list(set(lines)))
+            oracle = string_traces(formatted_oracle.get(test_method_name, ""))
+            pred = string_traces(predictions.get(test_method_name, {}))
+            precision, recall = evaluate(pred, oracle)
+            evaluation_results[test_method_name] = {"precision": precision, "recall": recall, "f1": (2 * precision * recall) / (precision + recall) if (precision + recall) > 0 else 0}
+            evaluation_results["average"] = {
+                "precision": sum(result["precision"] for result in evaluation_results.values()) / len(evaluation_results),
+                "recall": sum(result["recall"] for result in evaluation_results.values()) / len(evaluation_results),
+                "f1": sum(result["f1"] for result in evaluation_results.values()) / len(evaluation_results),
+            }
+        with open(f"output/{self.project}_{self.registry}/logcoco_validation_metrics.json", "w") as f:
+            json.dump(evaluation_results, f, indent=4)
+
     def method_level_evaluate(self):
         # Implement evaluation logic here
         pred_file = f"output/{self.project}_{self.registry}/method_level_validation_prediction.jsonl"

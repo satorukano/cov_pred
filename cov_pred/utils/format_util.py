@@ -1,6 +1,8 @@
 import os
 import json
 from ordered_set import OrderedSet
+import pathlib
+from sklearn.model_selection import train_test_split
 
 def merge_traces(traces1: dict[str, list[int]], traces2: dict[str, list[int]]) -> dict[str, list[int]]:
     merged = traces1.copy()
@@ -90,3 +92,15 @@ def make_jsonl(data, filename):
 
 def set_methods(methods: str) -> set[str]:
     return set(map(str.strip, methods.split("|")))
+
+def get_train_test_split(project: str, registry: str, signatures: list[str], test_size=0.2, random_state=42):
+    file_path = pathlib.Path(f"output/{project}_{registry}/train_test_signature.json")
+    if file_path.exists():
+        with open(file_path, "r") as f:
+            data = json.load(f)
+            return data["train"], data["test"]
+    train, test = train_test_split(signatures, test_size=test_size, random_state=random_state)
+    os.makedirs(os.path.dirname(file_path), exist_ok=True)
+    with open(file_path, "w") as f:
+        json.dump({"train": train, "test": test}, f)
+    return train, test

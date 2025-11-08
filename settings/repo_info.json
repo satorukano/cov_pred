@@ -1,5 +1,11 @@
 {
     "zookeeper": {
         "url": "https://github.com/apache/zookeeper"
+    },
+    "druid": {
+        "url": "https://github.com/apache/druid"
+    },
+    "activemq": {
+        "url": "https://github.com/apache/activemq"
     }
 }

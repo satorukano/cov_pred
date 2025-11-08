@@ -12,7 +12,7 @@ class LogcocoProcessor:
         self.git.clone_or_checkout_commit()
         self.database = database
 
-    def prepare_log_data(self):
+    def prepare_log_data(self, level: str = "method"):
         logs = self.database.get_logs(self.registry)
         logs_with_signature = {}
         for log in logs:
@@ -20,13 +20,13 @@ class LogcocoProcessor:
             if signature not in logs_with_signature:
                 logs_with_signature[signature] = []
             logs_with_signature[signature].append(log)
-        validation_signatures = get_validation_signatures(self.git.project, self.git.registry)
+        validation_signatures = get_validation_signatures(self.git.project, self.git.registry, level)
         for signature in validation_signatures:
             signature_logs = logs_with_signature.get(signature, [])
             signature_logs.sort(key=lambda x: x['invoked_order'])
             method_name = signature.split(';')[-1]
             if signature_logs:
-                os.makedirs(f"LogCoCo/{self.project}_{self.registry}/{method_name}", exist_ok=True)
-            with open(f"LogCoCo/{self.project}_{self.registry}/{method_name}/log.txt", 'w') as f:
+                os.makedirs(f"LogCoCo/{self.project}_{self.registry}/{level}/{method_name}", exist_ok=True)
+            with open(f"LogCoCo/{self.project}_{self.registry}/{level}/{method_name}/log.txt", 'w') as f:
                 for log in signature_logs:
                     f.write(log['statement'] + '\n')    
