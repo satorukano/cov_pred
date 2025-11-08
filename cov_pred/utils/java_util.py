@@ -206,7 +206,7 @@ def extract_empty_and_comment_lines(directory_path):
                             empty_comment_lines.append(i + 1)
                             if '*/' not in stripped_line:
                                 in_block_comment = True
-                        elif stripped_line.startswith('//') or stripped_line == '':
+                        elif stripped_line.startswith('//') or stripped_line == '' or stripped_line == '{' or stripped_line == '}':
                             empty_comment_lines.append(i + 1)
                     
                     file_to_empty_comment_lines[str(related_path)] = empty_comment_lines
