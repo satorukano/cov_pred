@@ -52,8 +52,10 @@ class BulkFormatProcessor:
             id_for_validation = 0
             total_logs = []
             for thread_id, logs in application_log_manager.get_logs_by_signature(signature).items():
-                total_logs.extend([log.get_log_statement() for log in logs])
-                input_data = "|".join(total_logs)
+                total_logs.extend(logs)
+            ordered_logs = sorted(total_logs, key=lambda x: x.order)
+            ordered_log_statements = [log.get_log_statement() for log in ordered_logs]
+            input_data = "|".join(ordered_log_statements)
             validation_input.append(self.gpt.format_for_gpt_bulk_validation(input_data, signature, id_for_validation, model))
         make_jsonl(validation_input, f"output/{self.project}_{self.registry}/bulk_validation.jsonl")
 
