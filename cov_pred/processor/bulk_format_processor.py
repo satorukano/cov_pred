@@ -54,7 +54,7 @@ class BulkFormatProcessor:
             for thread_id, logs in application_log_manager.get_logs_by_signature(signature).items():
                 total_logs.extend([log.get_log_statement() for log in logs])
                 input_data = "|".join(total_logs)
-                validation_input.append(self.gpt.format_for_gpt_bulk_validation(input_data, signature, id_for_validation, model))
+            validation_input.append(self.gpt.format_for_gpt_bulk_validation(input_data, signature, id_for_validation, model))
         make_jsonl(validation_input, f"output/{self.project}_{self.registry}/bulk_validation.jsonl")
 
     def make_validation_oracle(self, trace_manager: TraceManager):
