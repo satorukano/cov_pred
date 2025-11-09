@@ -1,14 +1,14 @@
 import json
 import os
 
-def evaluate(pred, ans):
-    formatted_pred = format(pred)
-    formatted_ans = format(ans)
+def evaluate(pred, ans, empty_and_comment_lines=None):
+    formatted_pred = format(pred, empty_and_comment_lines)
+    formatted_ans = format(ans, empty_and_comment_lines)
     precision = calc_precision(formatted_pred, formatted_ans)
     recall = calc_recall(formatted_pred, formatted_ans)
     return precision, recall
 
-def format(data):
+def format(data, empty_and_comment_lines=None):
     formatted = {}
     for file_line in data.split("|"):
         if ":" not in file_line:
@@ -16,14 +16,19 @@ def format(data):
         if len(file_line.split(":")) != 2:
             continue
         file_name, lines = file_line.split(":")
+        empty_and_comment_line = empty_and_comment_lines.get(file_name, []) if empty_and_comment_lines else []
         int_lines = []
         for line in lines.split(","):
             try:
                 if "-" in line:
                     start, end = line.split("-")
                     for i in range(int(start), int(end)+1):
+                        if i in empty_and_comment_line:
+                            continue
                         int_lines.append(i)
                 else:
+                    if int(line) in empty_and_comment_line:
+                        continue
                     int_lines.append(int(line))
             except:
                 continue

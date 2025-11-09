@@ -7,9 +7,10 @@ from utils.java_util import extract_all_class_and_method_info
 
 class EvaluationProcessor:
 
-    def __init__(self, project: str, registry: str):
+    def __init__(self, project: str, registry: str, empty_and_comment_lines: dict[str, list[int]]):
         self.project = project
         self.registry = registry
+        self.empty_and_comment_lines = empty_and_comment_lines
 
     def evaluate(self):
         # Implement evaluation logic here
@@ -30,7 +31,7 @@ class EvaluationProcessor:
         for signature in predictions.keys():
             ans = answers.get(signature, "")
             pred = string_traces(predictions[signature])
-            precision, recall = evaluate(pred, ans)
+            precision, recall = evaluate(pred, ans, self.empty_and_comment_lines)
             results[signature] = {"precision": precision, "recall": recall, "f1": (2 * precision * recall) / (precision + recall) if (precision + recall) > 0 else 0}
         results["average"] = {
             "precision": sum(result["precision"] for result in results.values()) / len(results),
@@ -76,7 +77,7 @@ class EvaluationProcessor:
                 predictions[test_method_name][file] = sorted(list(set(lines)))
             oracle = string_traces(formatted_oracle.get(test_method_name, ""))
             pred = string_traces(predictions.get(test_method_name, {}))
-            precision, recall = evaluate(pred, oracle)
+            precision, recall = evaluate(pred, oracle, self.empty_and_comment_lines)
             evaluation_results[test_method_name] = {"precision": precision, "recall": recall, "f1": (2 * precision * recall) / (precision + recall) if (precision + recall) > 0 else 0}
             evaluation_results["average"] = {
                 "precision": sum(result["precision"] for result in evaluation_results.values()) / len(evaluation_results),
@@ -105,7 +106,7 @@ class EvaluationProcessor:
         for signature in predictions.keys():
             ans = set_methods(answers.get(signature, ""))
             pred = predictions[signature]
-            precision, recall = evaluate_methods_level(pred, ans)
+            precision, recall = evaluate_methods_level(pred, ans, self.empty_and_comment_lines)
             results[signature] = {"precision": precision, "recall": recall, "f1": (2 * precision * recall) / (precision + recall) if (precision + recall) > 0 else 0}
         results["average"] = {
             "precision": sum(result["precision"] for result in results.values()) / len(results),

@@ -1,15 +1,14 @@
 from processor.evaluation_processor import EvaluationProcessor
 from utils.git import Git
+from utils.java_util import extract_empty_and_comment_lines
 from database import Database
 
 class EvaluationController:
     def __init__(self, project: str, registry: str):
         self.project = project
         self.registry = registry
-        self.evaluation_processor = EvaluationProcessor(self.project, self.registry)
-    
-    def setup(self):
-        self.evaluation_processor = EvaluationProcessor(self.project, self.registry)
+        self.empty_and_comment_lines = extract_empty_and_comment_lines(f"./repos/{self.project}")
+        self.evaluation_processor = EvaluationProcessor(self.project, self.registry, self.empty_and_comment_lines)
 
     def evaluate(self):
         self.evaluation_processor.evaluate()
