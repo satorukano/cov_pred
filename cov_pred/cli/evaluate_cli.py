@@ -2,14 +2,14 @@ from controller.evaluation_controller import EvaluationController
 
 def setup_evaluate_parser(subparsers):
     parser = subparsers.add_parser('evaluate', help='Evaluate predictions')
-    parser.add_argument('mode', choices=['line', 'method', 'logcoco_method'],
+    parser.add_argument('mode', choices=['line', 'logcoco_line', 'method', 'logcoco_method'],
                        help='Format mode')
     parser.add_argument('project', help='Project name')
     parser.add_argument('registry', help='Registry path')
     parser.set_defaults(func=handle_evaluate)
 
 def handle_evaluate(args):
-    if args.mode not in ['line', 'method', 'logcoco_method']:
+    if args.mode not in ['line', 'method', 'logcoco_method', 'logcoco_line']:
         raise ValueError(f"{args.mode} mode is not supported")
     controller = EvaluationController(args.project, args.registry)
 

@@ -46,7 +46,7 @@ class EvaluationProcessor:
         evaluation_results = {}
         predictions = {}
         oracle = {}
-        oracle_file = f"output/{self.project}_{self.registry}/validation_oracle.json"
+        oracle_file = f"output/{self.project}_{self.registry}/bulk_validation_oracle.json"
         with open(oracle_file, "r") as f:
             oracle = json.load(f)
         formatted_oracle = {}
@@ -61,11 +61,11 @@ class EvaluationProcessor:
                     if row["MustCoveredLines"] == "0":
                         continue
                     # Get the relative file path(TODO fix for your environment)
-                    file = os.path.relpath(row["FilePath"], "/work/satoru-k/projects/"+self.project)[-1]
+                    file = os.path.relpath(row["FilePath"], "/work/satoru-k/projects/"+self.project).split('/')[-1]
                     must_lines = row['MustLineNumbers']
                     may_lines = row['MayLineNumbers'] if include_may_lines else None
                 lines = must_lines.split(";")
-                if may_lines:
+                if may_lines and may_lines != 'None':
                     lines += may_lines.split(";")
                 for line in lines:
                     line_number = int(line)
@@ -75,15 +75,15 @@ class EvaluationProcessor:
             
             for file, lines in predictions[test_method_name].items():
                 predictions[test_method_name][file] = sorted(list(set(lines)))
-            oracle = string_traces(formatted_oracle.get(test_method_name, ""))
+            oracle = formatted_oracle.get(test_method_name, "")
             pred = string_traces(predictions.get(test_method_name, {}))
             precision, recall = evaluate(pred, oracle, self.empty_and_comment_lines)
             evaluation_results[test_method_name] = {"precision": precision, "recall": recall, "f1": (2 * precision * recall) / (precision + recall) if (precision + recall) > 0 else 0}
-            evaluation_results["average"] = {
-                "precision": sum(result["precision"] for result in evaluation_results.values()) / len(evaluation_results),
-                "recall": sum(result["recall"] for result in evaluation_results.values()) / len(evaluation_results),
-                "f1": sum(result["f1"] for result in evaluation_results.values()) / len(evaluation_results),
-            }
+        evaluation_results["average"] = {
+            "precision": sum(result["precision"] for result in evaluation_results.values()) / len(evaluation_results),
+            "recall": sum(result["recall"] for result in evaluation_results.values()) / len(evaluation_results),
+            "f1": sum(result["f1"] for result in evaluation_results.values()) / len(evaluation_results),
+        }
         with open(f"output/{self.project}_{self.registry}/logcoco_validation_metrics.json", "w") as f:
             json.dump(evaluation_results, f, indent=4)
 
