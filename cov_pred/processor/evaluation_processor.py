@@ -64,7 +64,7 @@ class EvaluationProcessor:
                     file = os.path.relpath(row["FilePath"], "/work/satoru-k/projects/"+self.project).split('/')[-1]
                     must_lines = row['MustLineNumbers']
                     may_lines = row['MayLineNumbers'] if include_may_lines else None
-                lines = must_lines.split(";")
+                    lines = must_lines.split(";")
                 if may_lines and may_lines != 'None':
                     lines += may_lines.split(";")
                 for line in lines:
