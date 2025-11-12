@@ -66,7 +66,7 @@ class GPT:
                 "messages": [
                     {
                         "role": "system",
-                        "content": "Given application logs, provide estimated execution paths between two logs, where applicable: file name: executed lines|file name: executed lines"
+                        "content": "Given application logs, provide estimated execution paths, where applicable: file name: executed lines|file name: executed lines"
                     },
                     {
                         "role": "user",

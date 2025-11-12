@@ -3,7 +3,9 @@ from ordered_set import OrderedSet
 from utils.format_util import extract_method_from_traces, string_methods
 from sklearn.model_selection import train_test_split
 from utils.evaluation import evaluate_methods_level
+from utils.format_util import string_traces, get_train_test_split
 from manager.trace_manager import TraceManager
+from manager.application_log_manager import ApplicationLogManager
 import json
 
 class StaticAnalysisProcessor:
@@ -86,3 +88,29 @@ class StaticAnalysisProcessor:
             oracle[signature] = string_methods(oracle[signature])
         
         return oracle
+    
+    def identify_log_containing_methods_line(self, application_log_manager: ApplicationLogManager):
+        log_containing_methods_line = {}
+        train_signatures, validation_signatures = get_train_test_split(self.project, self.registry, application_log_manager.get_signatures_including_logs())
+        for signature in validation_signatures:
+            for thread_id, logs in application_log_manager.get_logs_by_signature(signature).items():
+                for log in logs:
+                    file = log.get_file()
+                    line = int(log.get_line())
+                    if file in self.class_method_info:
+                        for method_info in self.class_method_info[file]["methods"]:
+                            if method_info['start_line'] <= line <= method_info['end_line']:
+                                print(f"Log: {log.get_log_statement()} is in Method: {method_info['class_name']}.{method_info['method_name']}")
+                                if signature not in log_containing_methods_line:
+                                    log_containing_methods_line[signature] = {}
+                                if file.split('/')[-1] not in log_containing_methods_line[signature]:
+                                    log_containing_methods_line[signature][file.split('/')[-1]] = set()
+                                for l in range(method_info['start_line'], method_info['end_line'] + 1):
+                                    log_containing_methods_line[signature][file.split('/')[-1]].add(l)
+        for signature in log_containing_methods_line:
+            for file in log_containing_methods_line[signature]:
+                log_containing_methods_line[signature][file] = sorted(list(log_containing_methods_line[signature][file]))
+        with open(f"output/{self.project}_{self.registry}/static_analysis_log_containing_methods_line.json", "w") as f:
+            json.dump(log_containing_methods_line, f, indent=4)
+
+

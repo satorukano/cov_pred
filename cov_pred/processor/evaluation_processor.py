@@ -4,6 +4,7 @@ import csv
 from utils.evaluation import evaluate, format, evaluate_methods_level
 from utils.format_util import merge_traces, string_traces, set_methods
 from utils.java_util import extract_all_class_and_method_info
+from manager.application_log_manager import ApplicationLogManager
 
 class EvaluationProcessor:
 
@@ -12,12 +13,16 @@ class EvaluationProcessor:
         self.registry = registry
         self.empty_and_comment_lines = empty_and_comment_lines
 
-    def evaluate(self):
+    def evaluate(self, bulk: bool = False):
         # Implement evaluation logic here
         pred_file = f"output/{self.project}_{self.registry}/validation_prediction.jsonl"
+        if bulk:
+            pred_file = f"output/{self.project}_{self.registry}/bulk_validation_prediction.jsonl"
         with open(pred_file, "r") as f:
             raw_predictions = [json.loads(line) for line in f.readlines()]
         ans_file = f"output/{self.project}_{self.registry}/validation_oracle.json"
+        if bulk:
+            ans_file = f"output/{self.project}_{self.registry}/bulk_validation_oracle.json"
         with open(ans_file, "r") as f:
             answers = json.load(f)
         predictions = {}
@@ -31,6 +36,7 @@ class EvaluationProcessor:
         for signature in predictions.keys():
             ans = answers.get(signature, "")
             pred = string_traces(predictions[signature])
+            print(signature)
             precision, recall = evaluate(pred, ans, self.empty_and_comment_lines)
             results[signature] = {"precision": precision, "recall": recall, "f1": (2 * precision * recall) / (precision + recall) if (precision + recall) > 0 else 0}
         results["average"] = {
@@ -65,13 +71,13 @@ class EvaluationProcessor:
                     must_lines = row['MustLineNumbers']
                     may_lines = row['MayLineNumbers'] if include_may_lines else None
                     lines = must_lines.split(";")
-                if may_lines and may_lines != 'None':
-                    lines += may_lines.split(";")
-                for line in lines:
-                    line_number = int(line)
-                    if file not in predictions[test_method_name]:
-                        predictions[test_method_name][file] = []
-                    predictions[test_method_name][file].append(line_number)
+                    if may_lines and may_lines != 'None':
+                        lines += may_lines.split(";")
+                    for line in lines:
+                        line_number = int(line)
+                        if file not in predictions[test_method_name]:
+                            predictions[test_method_name][file] = []
+                        predictions[test_method_name][file].append(line_number)
             
             for file, lines in predictions[test_method_name].items():
                 predictions[test_method_name][file] = sorted(list(set(lines)))
@@ -86,6 +92,7 @@ class EvaluationProcessor:
         }
         with open(f"output/{self.project}_{self.registry}/logcoco_validation_metrics.json", "w") as f:
             json.dump(evaluation_results, f, indent=4)
+
 
     def method_level_evaluate(self):
         # Implement evaluation logic here

@@ -10,9 +10,9 @@ class EvaluationController:
         self.empty_and_comment_lines = extract_empty_and_comment_lines(f"./repos/{self.project}")
         self.evaluation_processor = EvaluationProcessor(self.project, self.registry, self.empty_and_comment_lines)
 
-    def evaluate(self):
-        self.evaluation_processor.evaluate()
-    
+    def evaluate(self, bulk: bool = False):
+        self.evaluation_processor.evaluate(bulk=bulk)
+
     def logcoco_evaluate(self):
         self.evaluation_processor.logcoco_evaluate()
     

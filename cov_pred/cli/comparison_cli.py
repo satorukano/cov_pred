@@ -3,7 +3,7 @@ from controller.static_analysis_controller import StaticAnalysisController
 
 def setup_compare_parser(subparsers):
     parser = subparsers.add_parser('compare', help='Compare data for training/validation')
-    parser.add_argument('mode', choices=['prepare_logcoco', 'static_analysis'],
+    parser.add_argument('mode', choices=['prepare_logcoco', 'static_analysis', 'target'],
                        help='Compare mode')
     parser.add_argument('project', help='Project name')
     parser.add_argument('registry', help='Registry path')
@@ -11,7 +11,7 @@ def setup_compare_parser(subparsers):
     parser.set_defaults(func=handle_compare)
 
 def handle_compare(args):
-    if args.mode not in ['prepare_logcoco', 'static_analysis']:
+    if args.mode not in ['prepare_logcoco', 'static_analysis', 'target']:
         raise ValueError(f"mode is required")
 
     if args.mode == 'prepare_logcoco':
@@ -24,3 +24,8 @@ def handle_compare(args):
             module = "zookeeper-server"
         controller = StaticAnalysisController(args.project, args.registry, module)
         controller.analyze()
+    
+    if args.mode == 'target':
+        if args.level == 'line':
+            controller = StaticAnalysisController(args.project, args.registry)
+            controller.identify_log_containing_methods()
