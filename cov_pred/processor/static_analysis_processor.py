@@ -93,6 +93,8 @@ class StaticAnalysisProcessor:
         log_containing_methods_line = {}
         train_signatures, validation_signatures = get_train_test_split(self.project, self.registry, application_log_manager.get_signatures_including_logs())
         for signature in validation_signatures:
+            if signature not in log_containing_methods_line:
+                log_containing_methods_line[signature] = {}
             for thread_id, logs in application_log_manager.get_logs_by_signature(signature).items():
                 for log in logs:
                     file = log.get_file()
@@ -101,8 +103,6 @@ class StaticAnalysisProcessor:
                         for method_info in self.class_method_info[file]["methods"]:
                             if method_info['start_line'] <= line <= method_info['end_line']:
                                 print(f"Log: {log.get_log_statement()} is in Method: {method_info['class_name']}.{method_info['method_name']}")
-                                if signature not in log_containing_methods_line:
-                                    log_containing_methods_line[signature] = {}
                                 if file.split('/')[-1] not in log_containing_methods_line[signature]:
                                     log_containing_methods_line[signature][file.split('/')[-1]] = set()
                                 for l in range(method_info['start_line'], method_info['end_line'] + 1):

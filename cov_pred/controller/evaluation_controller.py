@@ -16,6 +16,9 @@ class EvaluationController:
     def logcoco_evaluate(self):
         self.evaluation_processor.logcoco_evaluate()
     
+    def static_line_evaluate(self):
+        self.evaluation_processor.static_line_evaluate()
+    
     def method_level_evaluate(self):
         self.evaluation_processor.method_level_evaluate()
     
