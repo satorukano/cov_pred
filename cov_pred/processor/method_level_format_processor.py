@@ -20,6 +20,8 @@ class MethodLevelFormatProcessor:
 
     def format_for_training(self, collection):
         formatted_collection = {}
+        seen_patterns = set()  # 重複パターンを追跡するためのセット
+
         for signature, threads_collection in collection.items():
             formatted_collection[signature] = {}
             for thread_id, logs_executions in threads_collection.items():
@@ -36,6 +38,27 @@ class MethodLevelFormatProcessor:
                     if len(previous_statement) > 2000 or len(current_statement) > 2000:
                         count -= 1
                         continue
+
+                    # prev_logとcurr_logのファイル名と行数を取得
+                    prev_file = prev_log.get_file() if prev_log != "" else None
+                    prev_line = prev_log.get_line() if prev_log != "" else None
+                    curr_file = curr_log.get_file() if curr_log != "" else None
+                    curr_line = curr_log.get_line() if curr_log != "" else None
+
+                    # パターンの一意性を確認するためのキーを作成
+                    methods_str = string_methods(methods)
+                    pattern_key = (prev_file, prev_line, curr_file, curr_line, methods_str)
+
+                    # 重複パターンをチェック
+                    if pattern_key in seen_patterns:
+                        count = 0
+                        logs = []
+                        total_methods = OrderedSet()
+                        continue
+
+                    # 新しいパターンを記録
+                    seen_patterns.add(pattern_key)
+
                     formatted_previous_log = cut_prefix(previous_statement, "START")
                     formatted_current_log = cut_prefix(current_statement, "END")
 

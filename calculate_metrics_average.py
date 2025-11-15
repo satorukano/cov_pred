@@ -12,6 +12,8 @@ from typing import Dict, List, Tuple
 name_keys = {
     'static_line_validation_metrics.json': 'Static Analysis',
     'validation_metrics.json': 'TraceLLM',
+    'zookeeper_48': 'Zookeeper',
+    'activemq_59': 'ActiveMQ',
 }
 
 
@@ -68,7 +70,7 @@ def calculate_averages(metrics_data: Dict) -> Tuple[float, float, float]:
 def main():
     # Define the directories and files to analyze
     base_dir = Path('output')
-    projects = ['activemq_59', 'zookeeper_48']
+    projects = ['zookeeper_48', 'activemq_59']
     metric_files = ['static_line_validation_metrics.json', 'validation_metrics.json']
 
     print("=" * 80)
@@ -121,13 +123,13 @@ def main():
     for metric_file in metric_files:
         print(f"\n{name_keys[metric_file]}:")
         print("-" * 80)
-        print(f"{'Project':<20} {'Tests':<10} {'Precision':<12} {'Recall':<12} {'F1 Score':<12}")
+        print(f"{'Project':<20} {'Tests':<10} {'Average Precision':<12} {'Average Recall':<12} {'Average F1 Score':<12}")
         print("-" * 80)
 
         for project in projects:
             if project in all_results and metric_file in all_results[project]:
                 results = all_results[project][metric_file]
-                print(f"{project:<20} {results['num_tests']:<10} "
+                print(f"{name_keys[project]:<20} {results['num_tests']:<10} "
                       f"{results['avg_precision']:<12.4f} "
                       f"{results['avg_recall']:<12.4f} "
                       f"{results['avg_f1']:<12.4f}")
