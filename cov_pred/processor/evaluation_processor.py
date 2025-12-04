@@ -143,10 +143,80 @@ class EvaluationProcessor:
             json.dump(results, f, indent=4)
     
     def method_level_from_line_evaluate(self):
+        # Load class and method info
         class_and_method_info = extract_all_class_and_method_info(f"repos/{self.project}")
+
+        # Load line-level predictions
+        pred_file = f"output/{self.project}_{self.registry}/validation_prediction.jsonl"
+        with open(pred_file, "r") as f:
+            raw_predictions = [json.loads(line) for line in f.readlines()]
+
+        # Load method-level oracle
         ans_file = f"output/{self.project}_{self.registry}/method_level_validation_oracle.json"
         with open(ans_file, "r") as f:
             answers = json.load(f)
+
+        # Convert line-level predictions to method-level predictions
+        # First, merge all predictions for each signature
+        line_predictions = {}
+        for prediction in raw_predictions:
+            signature = prediction["custom_id"].split("#")[0] + '#'
+            if signature not in line_predictions:
+                line_predictions[signature] = {}
+            line_predictions[signature] = merge_traces(
+                line_predictions[signature],
+                format(prediction["response"]["body"]["choices"][0]["message"]["content"], self.empty_and_comment_lines)
+            )
+
+        # Convert merged line-level predictions to method-level
+        predictions = {}
+        for signature, line_prediction in line_predictions.items():
+            predictions[signature] = set()
+
+            # For each file and its lines in the prediction
+            for file_name, lines in line_prediction.items():
+                # Find the corresponding file in class_and_method_info
+                matched_file = None
+                for file_path, file_info in class_and_method_info.items():
+                    if file_path.endswith(file_name):
+                        matched_file = file_path
+                        break
+
+                if matched_file is None:
+                    continue
+
+                file_info = class_and_method_info[matched_file]
+                methods_info = file_info.get("methods", [])
+
+                # For each line, find which method it belongs to
+                for line in lines:
+                    for method_info in methods_info:
+                        if method_info['start_line'] <= line <= method_info['end_line']:
+                            method_full_name = method_info["class_name"] + "." + method_info["method_name"]
+                            predictions[signature].add(method_full_name)
+                            break
+
+        # Evaluate method-level predictions
+        results = {}
+        for signature in predictions.keys():
+            ans = set_methods(answers.get(signature, ""))
+            pred = predictions[signature]
+            precision, recall = evaluate_methods_level(pred, ans)
+            results[signature] = {
+                "precision": precision,
+                "recall": recall,
+                "f1": (2 * precision * recall) / (precision + recall) if (precision + recall) > 0 else 0
+            }
+
+        results["average"] = {
+            "precision": sum(result["precision"] for result in results.values()) / len(results) if len(results) > 0 else 0,
+            "recall": sum(result["recall"] for result in results.values()) / len(results) if len(results) > 0 else 0,
+            "f1": sum(result["f1"] for result in results.values()) / len(results) if len(results) > 0 else 0,
+        }
+
+        # Save results
+        with open(f"output/{self.project}_{self.registry}/method_level_from_line_validation_metrics.json", "w") as f:
+            json.dump(results, f, indent=4)
 
     def static_method_level_evaluate(self):
         # Implement evaluation logic here
