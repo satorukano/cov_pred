@@ -28,4 +28,7 @@ def handle_compare(args):
     if args.mode == 'target':
         if args.level == 'line':
             controller = StaticAnalysisController(args.project, args.registry)
+            controller.identify_log_containing_methods_line()
+        elif args.level == 'method':
+            controller = StaticAnalysisController(args.project, args.registry)
             controller.identify_log_containing_methods()

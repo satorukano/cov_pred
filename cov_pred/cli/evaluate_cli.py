@@ -2,14 +2,14 @@ from controller.evaluation_controller import EvaluationController
 
 def setup_evaluate_parser(subparsers):
     parser = subparsers.add_parser('evaluate', help='Evaluate predictions')
-    parser.add_argument('mode', choices=['line', 'bulk_line', 'logcoco_line', 'method', 'logcoco_method', 'static_line'],
+    parser.add_argument('mode', choices=['line', 'bulk_line', 'logcoco_line', 'method', 'logcoco_method', 'static_line', 'static_method'],
                        help='Format mode')
     parser.add_argument('project', help='Project name')
     parser.add_argument('registry', help='Registry path')
     parser.set_defaults(func=handle_evaluate)
 
 def handle_evaluate(args):
-    if args.mode not in ['line', 'bulk_line', 'method', 'logcoco_method', 'logcoco_line', 'static_line']:
+    if args.mode not in ['line', 'bulk_line', 'method', 'logcoco_method', 'logcoco_line', 'static_line', 'static_method']:
         raise ValueError(f"{args.mode} mode is not supported")
     controller = EvaluationController(args.project, args.registry)
 
@@ -19,6 +19,8 @@ def handle_evaluate(args):
         controller.evaluate(bulk=True)
     elif args.mode == 'static_line':
         controller.static_line_evaluate()
+    elif args.mode == 'static_method':
+        controller.static_method_level_evaluate()
     elif args.mode == 'logcoco_line':
         controller.logcoco_evaluate()
     elif args.mode == 'method':

@@ -105,12 +105,38 @@ class StaticAnalysisProcessor:
                                 print(f"Log: {log.get_log_statement()} is in Method: {method_info['class_name']}.{method_info['method_name']}")
                                 if file.split('/')[-1] not in log_containing_methods_line[signature]:
                                     log_containing_methods_line[signature][file.split('/')[-1]] = set()
-                                for l in range(method_info['start_line'], method_info['end_line'] + 1):
+                                if method_info['start_line'] == method_info['end_line']:
+                                    log_containing_methods_line[signature][file.split('/')[-1]].add(method_info['start_line'])
+                                for l in range(method_info['start_line']+1, method_info['end_line']):
                                     log_containing_methods_line[signature][file.split('/')[-1]].add(l)
         for signature in log_containing_methods_line:
             for file in log_containing_methods_line[signature]:
                 log_containing_methods_line[signature][file] = sorted(list(log_containing_methods_line[signature][file]))
         with open(f"output/{self.project}_{self.registry}/static_analysis_log_containing_methods_line.json", "w") as f:
+            json.dump(log_containing_methods_line, f, indent=4)
+
+
+    def identify_log_containing_methods(self, application_log_manager: ApplicationLogManager):
+        log_containing_methods_line = {}
+        train_signatures, validation_signatures = get_train_test_split(self.project, self.registry, application_log_manager.get_signatures_including_logs())
+        for signature in validation_signatures:
+            if signature not in log_containing_methods_line:
+                log_containing_methods_line[signature] = {}
+            for thread_id, logs in application_log_manager.get_logs_by_signature(signature).items():
+                for log in logs:
+                    file = log.get_file()
+                    line = int(log.get_line())
+                    if file in self.class_method_info:
+                        for method_info in self.class_method_info[file]["methods"]:
+                            if method_info['start_line'] <= line <= method_info['end_line']:
+                                print(f"Log: {log.get_log_statement()} is in Method: {method_info['class_name']}.{method_info['method_name']}")
+                                if file.split('/')[-1] not in log_containing_methods_line[signature]:
+                                    log_containing_methods_line[signature][file.split('/')[-1]] = set()
+                                log_containing_methods_line[signature][file.split('/')[-1]].add(f"{method_info['class_name']}.{method_info['method_name']}")
+        for signature in log_containing_methods_line:
+            for file in log_containing_methods_line[signature]:
+                log_containing_methods_line[signature][file] = sorted(list(log_containing_methods_line[signature][file]))
+        with open(f"output/{self.project}_{self.registry}/static_analysis_log_containing_methods.json", "w") as f:
             json.dump(log_containing_methods_line, f, indent=4)
 
 

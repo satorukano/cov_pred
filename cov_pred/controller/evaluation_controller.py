@@ -22,6 +22,12 @@ class EvaluationController:
     def method_level_evaluate(self):
         self.evaluation_processor.method_level_evaluate()
     
+    def method_level_from_line_evaluate(self):
+        self.evaluation_processor.method_level_from_line_evaluate()
+    
+    def static_method_level_evaluate(self):
+        self.evaluation_processor.static_method_level_evaluate()
+    
     def logcoco_method_level_evaluate(self):
         db = Database()
         git = Git(self.project, self.registry, "./repos", db)

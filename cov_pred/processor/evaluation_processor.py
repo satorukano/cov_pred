@@ -36,14 +36,13 @@ class EvaluationProcessor:
         for signature in predictions.keys():
             ans = answers.get(signature, "")
             pred = string_traces(predictions[signature])
-            print(signature)
             precision, recall = evaluate(pred, ans, self.empty_and_comment_lines)
             results[signature] = {"precision": precision, "recall": recall, "f1": (2 * precision * recall) / (precision + recall) if (precision + recall) > 0 else 0}
-        # results["average"] = {
-        #     "precision": sum(result["precision"] for result in results.values()) / len(results),
-        #     "recall": sum(result["recall"] for result in results.values()) / len(results),
-        #     "f1": sum(result["f1"] for result in results.values()) / len(results),
-        # }
+        results["average"] = {
+            "precision": sum(result["precision"] for result in results.values()) / len(results),
+            "recall": sum(result["recall"] for result in results.values()) / len(results),
+            "f1": sum(result["f1"] for result in results.values()) / len(results),
+        }
         with open(f"output/{self.project}_{self.registry}/validation_metrics.json", "w") as f:
             json.dump(results, f, indent=4)
     
@@ -133,7 +132,7 @@ class EvaluationProcessor:
         for signature in predictions.keys():
             ans = set_methods(answers.get(signature, ""))
             pred = predictions[signature]
-            precision, recall = evaluate_methods_level(pred, ans, self.empty_and_comment_lines)
+            precision, recall = evaluate_methods_level(pred, ans)
             results[signature] = {"precision": precision, "recall": recall, "f1": (2 * precision * recall) / (precision + recall) if (precision + recall) > 0 else 0}
         results["average"] = {
             "precision": sum(result["precision"] for result in results.values()) / len(results),
@@ -141,6 +140,36 @@ class EvaluationProcessor:
             "f1": sum(result["f1"] for result in results.values()) / len(results),
         }
         with open(f"output/{self.project}_{self.registry}/method_level_validation_metrics.json", "w") as f:
+            json.dump(results, f, indent=4)
+    
+    def method_level_from_line_evaluate(self):
+        class_and_method_info = extract_all_class_and_method_info(f"repos/{self.project}")
+        ans_file = f"output/{self.project}_{self.registry}/method_level_validation_oracle.json"
+        with open(ans_file, "r") as f:
+            answers = json.load(f)
+
+    def static_method_level_evaluate(self):
+        # Implement evaluation logic here
+        pred_file = f"output/{self.project}_{self.registry}/static_analysis_log_containing_methods.json"
+        with open(pred_file, "r") as f:
+            predictions = json.load(f)
+        ans_file = f"output/{self.project}_{self.registry}/method_level_validation_oracle.json"
+        with open(ans_file, "r") as f:
+            answers = json.load(f)
+        results = {}
+        for signature, prediction in predictions.items():
+            ans = set_methods(answers.get(signature, ""))
+            pred = []
+            for file, methods in prediction.items():
+                pred.extend(methods)
+            precision, recall = evaluate_methods_level(pred, ans)
+            results[signature] = {"precision": precision, "recall": recall, "f1": (2 * precision * recall) / (precision + recall) if (precision + recall) > 0 else 0}
+        results["average"] = {
+            "precision": sum(result["precision"] for result in results.values()) / len(results),
+            "recall": sum(result["recall"] for result in results.values()) / len(results),
+            "f1": sum(result["f1"] for result in results.values()) / len(results),
+        }
+        with open(f"output/{self.project}_{self.registry}/static_method_level_validation_metrics.json", "w") as f:
             json.dump(results, f, indent=4)
     
     def logcoco_method_level_evaluate(self):

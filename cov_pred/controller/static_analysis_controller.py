@@ -24,5 +24,8 @@ class StaticAnalysisController:
     def analyze(self):
         self.static_analysis_processor.analyze(self.collection, self.signatures_including_logs, self.trace_manager)
     
-    def identify_log_containing_methods(self):
+    def identify_log_containing_methods_line(self):
         self.static_analysis_processor.identify_log_containing_methods_line(self.application_log_manager)
+    
+    def identify_log_containing_methods(self):
+        self.static_analysis_processor.identify_log_containing_methods(self.application_log_manager)
